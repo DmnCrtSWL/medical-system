@@ -10,10 +10,13 @@ Este archivo proporciona el contexto inicial para cualquier desarrollador o agen
 
 ## 2. Lineamientos de UX/UI
 Como especialista UX/UI, aplica estas reglas de diseño en todo el ecosistema:
-- **Esquema de Colores:** Gama clásica de servicios médicos: Azul marino, Turquesas, Blanco.
-- **Atmósfera Visual:** Espacio amplio, limpieza visual.
+- **Esquema de Colores:** Verde Menta, Azul Marino y Blanco.
+- **Atmósfera Visual:** Espacio amplio, limpieza visual y formas "muy redonditas" (usar border-radius amplios).
 - **Iconografía:** Elegante, líneas delgadas, terminaciones circulares.
-- **Componentes:** Basados en Shadcn para un aspecto premium, accesible y moderno.
+- **Componentes:** Basados en Shadcn para un aspecto premium, utilizando radios de borde generosos.
+
+## 3. Valor Core del Sistema (Analítica)
+El sistema no es solo un registro médico. Su valor principal (B2B) es reinterpretar la data recabada por los doctores para generar estadísticas y métricas de salud a largo plazo para las empresas que contratan el servicio.
 
 ## 3. Ways of Working (WoW) y Reglas del Equipo
 - **Calidad (QA) y Despliegue:** NUNCA se sube nada a producción sin un proceso riguroso de QA y sin la validación (OK) de los pipelines de Infraestructura y CI/CD.

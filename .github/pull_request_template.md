@@ -4,11 +4,13 @@
 
 **Issue Relacionada:** Closes #
 
----
-
 ## ✅ Checklists Obligatorios
 
 Por favor, no solicites la revisión de este Pull Request si no has cumplido y marcado TODAS las siguientes casillas:
+
+### 🌳 Git Workflow & Scope
+- [ ] Confirmo que creé esta rama partiendo desde `master` (no desde otra rama de desarrollo) para evitar arrastrar código ajeno.
+- [ ] El Scope (alcance) de este PR no está inflado. Me limité a hacer **únicamente** lo que pide la Issue sin agregar funcionalidades extra no solicitadas.
 
 ### 🎾 Regla de la Pelota
 - [ ] Entiendo que la pelota está en mi cancha hasta que asigne oficialmente a la siguiente persona responsable.

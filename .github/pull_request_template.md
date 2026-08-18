@@ -11,8 +11,8 @@
 Por favor, no solicites la revisión de este Pull Request si no has cumplido y marcado TODAS las siguientes casillas:
 
 ### 🎾 Regla de la Pelota
-- [ ] Entiendo que la pelota está en mi cancha hasta que asigne oficialmente a un Reviewer.
-- [ ] He asignado explícitamente a un Reviewer en GitHub y le he notificado que su revisión es requerida.
+- [ ] Entiendo que la pelota está en mi cancha hasta que asigne oficialmente a la siguiente persona responsable.
+- [ ] He cambiado explícitamente el **Assignee** (Asignado) del PR o de la Issue en GitHub y le he notificado que la pelota está en su cancha.
 
 ### 🔒 Privacidad y Seguridad (B2B)
 - [ ] Confirmo que **NO HAY** datos financieros reales (precios, tarifas reales).
@@ -30,4 +30,4 @@ Por favor, no solicites la revisión de este Pull Request si no has cumplido y m
 
 ---
 
-> **Nota para el Reviewer:** Si al abrir este PR notas que alguna regla de privacidad fue violada, RECHAZA EL PR INMEDIATAMENTE. No se debe tolerar código con datos en duro en la rama `master`.
+> **Nota para el Assignee que recibe la pelota:** Si al revisar este PR notas que alguna regla de privacidad fue violada, RECHAZA EL PR INMEDIATAMENTE y regrésale la asignación (y la pelota) al desarrollador. No se debe tolerar código con datos en duro en la rama `master`.

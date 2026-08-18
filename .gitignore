@@ -1,0 +1,9 @@
+# Local Agent Customizations
+.agents/
+
+# Local Environment Variables
+.env
+
+# OS generated files
+.DS_Store
+

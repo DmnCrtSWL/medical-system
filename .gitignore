@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+
+# Local Environment Variables
+.env
+
+# Local Agent Customizations
+.agents/
+
+# OS generated files
+.DS_Store

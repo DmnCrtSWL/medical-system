@@ -1,9 +1,14 @@
-# Local Agent Customizations
-.agents/
+# Dependencies
+node_modules/
+backend/node_modules/
 
 # Local Environment Variables
 .env
+backend/.env
+
+# Local Agent Customizations
+.agents/
 
 # OS generated files
 .DS_Store
-
+workplan/.DS_Store

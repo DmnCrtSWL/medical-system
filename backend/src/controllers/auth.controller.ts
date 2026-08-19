@@ -13,8 +13,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Buscar usuario por email
-    const user = await (prisma as any).user.findUnique({
+    // Buscar usuario por email con tipado estricto de Prisma
+    const user = await prisma.user.findUnique({
       where: { email },
     });
 

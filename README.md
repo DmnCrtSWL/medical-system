@@ -38,3 +38,27 @@ Hemos estructurado un *Project Board* profesional directamente aquí en GitHub p
 ## 🤝 Flujo de Trabajo
 - **Commits y PRs:** Prohibido empujar directo a `master/main`. Todo desarrollo debe ser enviado mediante Pull Requests (PRs). Al crear tu PR, asegúrate de conectarlo a la Issue correspondiente (ej. `Closes #12`) para que la barra de progreso del Milestone avance automáticamente.
 - **Regla de Privacidad Máxima:** NUNCA dejes datos financieros reales, contratos, o nombres de clientes verdaderos "hardcodeados" en el código fuente. Todo valor escrito en el frontend debe ser texto de prueba (lorem ipsum o dummy data).
+
+## 🗄️ Base de Datos Local (PostgreSQL)
+
+Para levantar la base de datos de desarrollo local mediante Docker Compose:
+
+1. **Copiar plantilla de variables de entorno:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Levantar el contenedor de PostgreSQL 16:**
+   ```bash
+   docker compose up -d
+   ```
+
+3. **Verificar el estado del contenedor:**
+   ```bash
+   docker compose ps
+   ```
+
+- **Puerto:** `5432`
+- **Base de datos:** `medical_system_db`
+- **Usuario por defecto:** `postgres`
+

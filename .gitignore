@@ -9,6 +9,14 @@ backend/.env
 # Local Agent Customizations
 .agents/
 
+# AI Tools Artifacts
+.claude/
+.windsurf/
+skills-lock.json
+backend/.claude/
+backend/.windsurf/
+backend/skills-lock.json
+
 # OS generated files
 .DS_Store
 workplan/.DS_Store

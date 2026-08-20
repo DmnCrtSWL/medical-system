@@ -29,7 +29,7 @@ const content = reactive({
     ],
     stages: [
       {
-        title: 'Fase 0 y 1: Fundamentos y Backend Core',
+        title: 'Fase 1: Infraestructura, Core y Login',
         date: '21 de Agosto y 04 de Septiembre',
         progress: 87,
         clientReview: 'Aprobación del Look & Feel y validación de seguridad (Login).',
@@ -40,7 +40,7 @@ const content = reactive({
         ]
       },
       {
-        title: 'Fase 2 y 3: Operación B2B y Contratos',
+        title: 'Fase 2: B2B, Doctores y Contratos',
         date: '18 de Septiembre y 02 de Octubre',
         progress: 0,
         clientReview: 'Momento Clave: Creación de empresa de prueba y generación automática de contrato PDF.',
@@ -50,7 +50,7 @@ const content = reactive({
         ]
       },
       {
-        title: 'Fase 4 y 5: Finanzas y Setup Móvil',
+        title: 'Fase 3: Finanzas y Setup Móvil',
         date: '16 y 30 de Octubre',
         progress: 0,
         clientReview: 'Revisión del Dashboard financiero con datos semilla y primera instalación de la app nativa en teléfono.',
@@ -60,7 +60,7 @@ const content = reactive({
         ]
       },
       {
-        title: 'Fase 6 y 7: Historia Clínica y Sincronización',
+        title: 'Fase 4: Historia Clínica y App',
         date: '13 y 27 de Noviembre',
         progress: 0,
         clientReview: 'El cliente llenará una historia clínica en la app como doctor y la verá instantáneamente en el Panel Admin.',
@@ -71,7 +71,7 @@ const content = reactive({
         ]
       },
       {
-        title: 'Fase 8 y 9: QA y Lanzamiento General',
+        title: 'Fase 5: Pruebas Piloto y Release',
         date: '11 de Diciembre',
         progress: 0,
         clientReview: 'Sign-off final. Prueba piloto en vivo con un Médico de Confianza. Búsqueda de bugs antes de operar.',
@@ -105,7 +105,7 @@ const content = reactive({
     ],
     stages: [
       {
-        title: 'Phase 0 & 1: Foundations & Core Backend',
+        title: 'Phase 1: Infrastructure, Core & Login',
         date: 'August 21st & September 4th',
         progress: 87,
         clientReview: 'Look & Feel approval and security validation (Login).',
@@ -116,7 +116,7 @@ const content = reactive({
         ]
       },
       {
-        title: 'Phase 2 & 3: B2B Operations & Contracts',
+        title: 'Phase 2: B2B, Doctors & Contracts',
         date: 'September 18th & October 2nd',
         progress: 0,
         clientReview: 'Key Moment: Creation of a test company and automated PDF contract generation.',
@@ -126,7 +126,7 @@ const content = reactive({
         ]
       },
       {
-        title: 'Phase 4 & 5: Finances & Mobile Setup',
+        title: 'Phase 3: Finances & Mobile Setup',
         date: 'October 16th & 30th',
         progress: 0,
         clientReview: 'Financial Dashboard review with seed data and first native app installation on phone.',
@@ -136,7 +136,7 @@ const content = reactive({
         ]
       },
       {
-        title: 'Phase 6 & 7: Clinical History & Sync',
+        title: 'Phase 4: Clinical History & App',
         date: 'November 13th & 27th',
         progress: 0,
         clientReview: 'Client will fill out a clinical history in the app and see it instantly in the Admin Panel.',
@@ -147,7 +147,7 @@ const content = reactive({
         ]
       },
       {
-        title: 'Phase 8 & 9: QA & General Release',
+        title: 'Phase 5: Pilot Tests & Release',
         date: 'December 11th',
         progress: 0,
         clientReview: 'Final sign-off. Live pilot test with a Trusted Doctor. Bug hunt before operations.',

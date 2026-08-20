@@ -43,7 +43,7 @@ useIntersectionObserver(
       class="hidden md:flex absolute left-1/2 transform -translate-x-1/2 w-8 h-8 rounded-full border-4 border-[#0A2540] z-20 items-center justify-center transition-colors duration-500"
       :class="[
         progress > 0 
-          ? 'bg-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.5)] animate-pulse' 
+          ? 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] animate-pulse' 
           : 'bg-slate-600 shadow-[0_0_10px_rgba(71,85,105,0.3)]'
       ]"
     >
@@ -57,12 +57,12 @@ useIntersectionObserver(
         :class="[
           progress === 0 
             ? 'opacity-60 grayscale-[50%] border-slate-700/50' 
-            : 'hover:shadow-2xl hover:border-yellow-500/40 border-yellow-500/20'
+            : 'hover:shadow-2xl hover:border-blue-500/40 border-blue-500/20'
         ]"
       >
         <div 
           class="absolute top-0 right-0 w-32 h-32 rounded-full mix-blend-screen filter blur-[60px] opacity-10 pointer-events-none transition-opacity duration-700"
-          :class="progress > 0 ? 'bg-yellow-500 group-hover:opacity-30' : 'bg-slate-500'"
+          :class="progress > 0 ? 'bg-blue-500 group-hover:opacity-30' : 'bg-slate-500'"
         ></div>
         
         <!-- Header Injected via Slot but we can add progress wrapper or change the slot content in App.vue -->

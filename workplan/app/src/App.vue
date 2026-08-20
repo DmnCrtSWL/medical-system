@@ -8,6 +8,7 @@ const lang = ref('es')
 const content = reactive({
   es: {
     toggleLang: 'English',
+    inProgressStatus: 'En revisión',
     title: 'Medical Management System',
     subtitle: 'Timeline & Plan de Trabajo B2B',
     goalDate: 'Meta Final: 11 de Diciembre, 2026',
@@ -83,6 +84,7 @@ const content = reactive({
   },
   en: {
     toggleLang: 'Español',
+    inProgressStatus: 'Under review',
     title: 'Medical Management System',
     subtitle: 'B2B Timeline & Workplan',
     goalDate: 'Final Goal: December 11th, 2026',
@@ -280,15 +282,12 @@ const toggleLang = () => {
         <!-- Card Header -->
         <div class="mb-6 flex justify-between items-start">
           <div>
-            <p class="font-bold text-lg md:text-xl font-mono tracking-tight mb-1" :class="stage.progress === 0 ? 'text-slate-400' : 'text-yellow-400'">{{ stage.date }}</p>
+            <p class="font-bold text-lg md:text-xl font-mono tracking-tight mb-1" :class="stage.progress === 0 ? 'text-slate-400' : 'text-blue-400'">{{ stage.date }}</p>
             <h2 class="text-2xl md:text-3xl font-bold leading-tight" :class="stage.progress === 0 ? 'text-slate-300' : 'text-white'">{{ stage.title }}</h2>
           </div>
           <div class="flex flex-col items-end">
-            <div v-if="stage.progress > 0" class="text-xs font-bold uppercase tracking-wider text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded border border-yellow-500/20 animate-pulse mb-2 whitespace-nowrap">
-               In progress
-            </div>
-            <div class="text-xl font-bold font-mono" :class="stage.progress === 0 ? 'text-slate-500' : 'text-yellow-400'">
-               {{ stage.progress }}%
+            <div v-if="stage.progress > 0" class="text-xs font-bold uppercase tracking-wider text-blue-400 bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20 animate-pulse mb-2 whitespace-nowrap">
+               {{ t.inProgressStatus }}
             </div>
           </div>
         </div>
@@ -296,8 +295,8 @@ const toggleLang = () => {
         <!-- Departments Breakdown -->
         <div class="space-y-6 mb-8">
           <div v-for="(dept, dIdx) in stage.departments" :key="dIdx" class="flex items-start gap-4">
-            <div class="p-2.5 bg-white/5 rounded-xl border mt-0.5 shadow-inner" :class="stage.progress === 0 ? 'border-white/10' : 'bg-yellow-500/10 border-yellow-500/20'">
-              <component :is="dept.icon" class="w-5 h-5" :class="stage.progress === 0 ? 'text-slate-400' : 'text-yellow-500'" />
+            <div class="p-2.5 bg-white/5 rounded-xl border mt-0.5 shadow-inner" :class="stage.progress === 0 ? 'border-white/10' : 'bg-blue-500/10 border-blue-500/20'">
+              <component :is="dept.icon" class="w-5 h-5" :class="stage.progress === 0 ? 'text-slate-400' : 'text-blue-400'" />
             </div>
             <div>
               <h4 class="font-semibold text-base mb-1.5 tracking-wide" :class="stage.progress === 0 ? 'text-slate-400' : 'text-white'">{{ dept.name }}</h4>
@@ -313,7 +312,7 @@ const toggleLang = () => {
 
         <!-- Client Milestone Box -->
         <div class="mt-8 pt-6 border-t bg-black/20 -mx-6 md:-mx-8 -mb-6 md:-mb-8 p-6 md:p-8 rounded-b-2xl" :class="stage.progress === 0 ? 'border-white/5' : 'border-white/10'">
-          <h3 class="text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2" :class="stage.progress === 0 ? 'text-slate-500' : 'text-yellow-500'">
+          <h3 class="text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2" :class="stage.progress === 0 ? 'text-slate-500' : 'text-blue-400'">
             <CheckCircle2 class="w-4 h-4" />
             {{ t.clientReviewTitle }}
           </h3>

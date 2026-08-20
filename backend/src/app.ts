@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
+import contractRoutes from './routes/contract.routes';
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.use(express.json());
 
 // Enrutadores Principales
 app.use('/api/auth', authRoutes);
+app.use('/api/contracts', contractRoutes);
 
 // Endpoint de Salud / Prueba
 app.get('/api/health', (_req: Request, res: Response) => {

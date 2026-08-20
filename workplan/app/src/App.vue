@@ -30,6 +30,7 @@ const content = {
       {
         title: 'Fase 0 y 1: Fundamentos y Backend Core',
         date: '21 de Agosto y 04 de Septiembre',
+        progress: 15,
         clientReview: 'Aprobación del Look & Feel y validación de seguridad (Login).',
         departments: [
           { name: 'Base de Datos', icon: Database, tasks: ['Diseño de esquemas y arquitectura base', 'Modelos de Autenticación'] },
@@ -40,6 +41,7 @@ const content = {
       {
         title: 'Fase 2 y 3: Operación B2B y Contratos',
         date: '18 de Septiembre y 02 de Octubre',
+        progress: 0,
         clientReview: 'Momento Clave: Creación de empresa de prueba y generación automática de contrato PDF.',
         departments: [
           { name: 'Admin', icon: Monitor, tasks: ['CRUD de Usuarios Internos', 'Gestión de Cartera de Doctores', 'Módulo de Corporativos'] },
@@ -49,6 +51,7 @@ const content = {
       {
         title: 'Fase 4 y 5: Finanzas y Setup Móvil',
         date: '16 y 30 de Octubre',
+        progress: 0,
         clientReview: 'Revisión del Dashboard financiero con datos semilla y primera instalación de la app nativa en teléfono.',
         departments: [
           { name: 'Admin', icon: Monitor, tasks: ['Módulo de Caja (Ingresos/Egresos)', 'Calendario de contratos'] },
@@ -58,6 +61,7 @@ const content = {
       {
         title: 'Fase 6 y 7: Historia Clínica y Sincronización',
         date: '13 y 27 de Noviembre',
+        progress: 0,
         clientReview: 'El cliente llenará una historia clínica en la app como doctor y la verá instantáneamente en el Panel Admin.',
         departments: [
           { name: 'App (Móvil)', icon: Smartphone, tasks: ['Formularios de Historia Clínica', 'Gestión offline y caché'] },
@@ -68,6 +72,7 @@ const content = {
       {
         title: 'Fase 8 y 9: QA y Lanzamiento General',
         date: '11 de Diciembre',
+        progress: 0,
         clientReview: 'Sign-off final. Prueba piloto en vivo con un Médico de Confianza. Búsqueda de bugs antes de operar.',
         departments: [
           { name: 'Calidad (QA)', icon: ShieldCheck, tasks: ['Prueba piloto con doctor real', 'Bug Bash integral'] },
@@ -100,6 +105,7 @@ const content = {
       {
         title: 'Phase 0 & 1: Foundations & Core Backend',
         date: 'August 21st & September 4th',
+        progress: 15,
         clientReview: 'Look & Feel approval and security validation (Login).',
         departments: [
           { name: 'Database', icon: Database, tasks: ['Schema design and base architecture', 'Authentication Models'] },
@@ -110,6 +116,7 @@ const content = {
       {
         title: 'Phase 2 & 3: B2B Operations & Contracts',
         date: 'September 18th & October 2nd',
+        progress: 0,
         clientReview: 'Key Moment: Creation of a test company and automated PDF contract generation.',
         departments: [
           { name: 'Admin', icon: Monitor, tasks: ['Internal Users CRUD', 'Doctors Portfolio', 'Corporate Module'] },
@@ -119,6 +126,7 @@ const content = {
       {
         title: 'Phase 4 & 5: Finances & Mobile Setup',
         date: 'October 16th & 30th',
+        progress: 0,
         clientReview: 'Financial Dashboard review with seed data and first native app installation on phone.',
         departments: [
           { name: 'Admin', icon: Monitor, tasks: ['Cash Flow Module', 'Contracts Calendar'] },
@@ -128,6 +136,7 @@ const content = {
       {
         title: 'Phase 6 & 7: Clinical History & Sync',
         date: 'November 13th & 27th',
+        progress: 0,
         clientReview: 'Client will fill out a clinical history in the app and see it instantly in the Admin Panel.',
         departments: [
           { name: 'App (Mobile)', icon: Smartphone, tasks: ['Clinical History Forms', 'Offline cache management'] },
@@ -138,6 +147,7 @@ const content = {
       {
         title: 'Phase 8 & 9: QA & General Release',
         date: 'December 11th',
+        progress: 0,
         clientReview: 'Final sign-off. Live pilot test with a Trusted Doctor. Bug hunt before operations.',
         departments: [
           { name: 'Quality (QA)', icon: ShieldCheck, tasks: ['Pilot test with real doctor', 'Integral Bug Bash'] },
@@ -245,24 +255,35 @@ const toggleLang = () => {
         :key="index"
         :index="index"
         :align="index % 2 === 0 ? 'left' : 'right'"
+        :progress="stage.progress"
       >
         <!-- Card Header -->
-        <div class="mb-6">
-          <p class="text-[#34D399] font-bold text-lg md:text-xl font-mono tracking-tight mb-1">{{ stage.date }}</p>
-          <h2 class="text-2xl md:text-3xl font-bold text-white leading-tight">{{ stage.title }}</h2>
+        <div class="mb-6 flex justify-between items-start">
+          <div>
+            <p class="font-bold text-lg md:text-xl font-mono tracking-tight mb-1" :class="stage.progress === 0 ? 'text-slate-400' : 'text-yellow-400'">{{ stage.date }}</p>
+            <h2 class="text-2xl md:text-3xl font-bold leading-tight" :class="stage.progress === 0 ? 'text-slate-300' : 'text-white'">{{ stage.title }}</h2>
+          </div>
+          <div class="flex flex-col items-end">
+            <div v-if="stage.progress > 0" class="text-xs font-bold uppercase tracking-wider text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded border border-yellow-500/20 animate-pulse mb-2 whitespace-nowrap">
+               In progress
+            </div>
+            <div class="text-xl font-bold font-mono" :class="stage.progress === 0 ? 'text-slate-500' : 'text-yellow-400'">
+               {{ stage.progress }}%
+            </div>
+          </div>
         </div>
 
         <!-- Departments Breakdown -->
         <div class="space-y-6 mb-8">
           <div v-for="(dept, dIdx) in stage.departments" :key="dIdx" class="flex items-start gap-4">
-            <div class="p-2.5 bg-[#34D399]/10 rounded-xl border border-[#34D399]/20 mt-0.5 shadow-inner">
-              <component :is="dept.icon" class="w-5 h-5 text-[#34D399]" />
+            <div class="p-2.5 bg-white/5 rounded-xl border mt-0.5 shadow-inner" :class="stage.progress === 0 ? 'border-white/10' : 'bg-yellow-500/10 border-yellow-500/20'">
+              <component :is="dept.icon" class="w-5 h-5" :class="stage.progress === 0 ? 'text-slate-400' : 'text-yellow-500'" />
             </div>
             <div>
-              <h4 class="text-white font-semibold text-base mb-1.5 tracking-wide">{{ dept.name }}</h4>
+              <h4 class="font-semibold text-base mb-1.5 tracking-wide" :class="stage.progress === 0 ? 'text-slate-400' : 'text-white'">{{ dept.name }}</h4>
               <ul class="space-y-1">
-                <li v-for="(task, tIdx) in dept.tasks" :key="tIdx" class="text-sm md:text-base text-slate-300 flex items-start gap-2 leading-relaxed">
-                  <span class="text-white/30 text-xs mt-1">▹</span>
+                <li v-for="(task, tIdx) in dept.tasks" :key="tIdx" class="text-sm md:text-base flex items-start gap-2 leading-relaxed" :class="stage.progress === 0 ? 'text-slate-500' : 'text-slate-300'">
+                  <span class="text-xs mt-1" :class="stage.progress === 0 ? 'text-slate-600' : 'text-white/30'">▹</span>
                   <span>{{ task }}</span>
                 </li>
               </ul>
@@ -271,12 +292,12 @@ const toggleLang = () => {
         </div>
 
         <!-- Client Milestone Box -->
-        <div class="mt-8 pt-6 border-t border-white/10 bg-black/20 -mx-6 md:-mx-8 -mb-6 md:-mb-8 p-6 md:p-8 rounded-b-2xl">
-          <h3 class="text-xs font-bold uppercase tracking-widest text-[#34D399] mb-3 flex items-center gap-2">
+        <div class="mt-8 pt-6 border-t bg-black/20 -mx-6 md:-mx-8 -mb-6 md:-mb-8 p-6 md:p-8 rounded-b-2xl" :class="stage.progress === 0 ? 'border-white/5' : 'border-white/10'">
+          <h3 class="text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2" :class="stage.progress === 0 ? 'text-slate-500' : 'text-yellow-500'">
             <CheckCircle2 class="w-4 h-4" />
             {{ t.clientReviewTitle }}
           </h3>
-          <p class="text-base md:text-lg font-medium text-slate-200 leading-relaxed italic">
+          <p class="text-base md:text-lg font-medium leading-relaxed italic" :class="stage.progress === 0 ? 'text-slate-500' : 'text-slate-200'">
             "{{ stage.clientReview }}"
           </p>
         </div>

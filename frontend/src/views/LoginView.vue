@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
 import { Building2, AlertCircle } from 'lucide-vue-next';
 import { useAuthStore } from '../stores/auth';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
@@ -27,8 +28,8 @@ const handleLogin = async () => {
   try {
     await authStore.loginUser(email.value, password.value);
     router.push('/');
-  } catch (error: any) {
-    if (error.response && error.response.data && error.response.data.message) {
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.data?.message) {
       errorMessage.value = error.response.data.message;
     } else {
       errorMessage.value = 'Error al conectar con el servidor. Revisa tu conexión.';

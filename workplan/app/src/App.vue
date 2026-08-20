@@ -30,7 +30,7 @@ const content = {
       {
         title: 'Fase 0 y 1: Fundamentos y Backend Core',
         date: '21 de Agosto y 04 de Septiembre',
-        progress: 15,
+        progress: 87,
         clientReview: 'Aprobación del Look & Feel y validación de seguridad (Login).',
         departments: [
           { name: 'Base de Datos', icon: Database, tasks: ['Diseño de esquemas y arquitectura base', 'Modelos de Autenticación'] },
@@ -105,7 +105,7 @@ const content = {
       {
         title: 'Phase 0 & 1: Foundations & Core Backend',
         date: 'August 21st & September 4th',
-        progress: 15,
+        progress: 87,
         clientReview: 'Look & Feel approval and security validation (Login).',
         departments: [
           { name: 'Database', icon: Database, tasks: ['Schema design and base architecture', 'Authentication Models'] },

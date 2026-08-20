@@ -1,11 +1,11 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { Calendar, CheckCircle2, ChevronDown, Rocket, Smartphone, ShieldCheck, ArrowRight, Languages, Database, Server, Monitor, Globe } from 'lucide-vue-next'
 import TimelineItem from './components/TimelineItem.vue'
 
 const lang = ref('es')
 
-const content = {
+const content = reactive({
   es: {
     toggleLang: 'English',
     title: 'Medical Management System',
@@ -155,8 +155,28 @@ const content = {
         ]
       }
     ]
-  }
 }
+})
+
+onMounted(async () => {
+  try {
+    const res = await fetch('https://api.github.com/repos/DmnCrtSWL/medical-system/milestones?state=all&sort=due_on&direction=asc')
+    if (res.ok) {
+      const milestones = await res.json()
+      for (let i = 0; i < 5; i++) {
+        const ms = milestones[i]
+        if (ms) {
+          const total = ms.open_issues + ms.closed_issues
+          const progress = total > 0 ? Math.round((ms.closed_issues / total) * 100) : 0
+          content.es.stages[i].progress = progress
+          content.en.stages[i].progress = progress
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching milestones from GitHub:', error)
+  }
+})
 
 const t = computed(() => content[lang.value])
 

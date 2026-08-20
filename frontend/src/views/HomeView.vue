@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Building2, LogOut, ShieldCheck } from 'lucide-vue-next';
+import { Building2, FileText, LogOut, ShieldCheck } from 'lucide-vue-next';
 import { useAuthStore } from '../stores/auth';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import Button from '../components/ui/Button.vue';
@@ -44,7 +44,7 @@ const handleLogout = () => {
       <Button
         variant="ghost"
         size="sm"
-        class="text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-xl px-2.5"
+        class="text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-xl px-2.5 cursor-pointer"
         @click="handleLogout"
       >
         <LogOut class="w-4 h-4 mr-1" />
@@ -66,17 +66,27 @@ const handleLogout = () => {
 
       <CardContent class="pt-2">
         <template v-if="authStore.token">
-          <router-link to="/companies">
-            <Button variant="default" size="lg" class="w-full bg-mint-500 hover:bg-mint-600 font-semibold shadow-lg rounded-xl">
-              Gestión de Empresas B2B
-            </Button>
-          </router-link>
+          <div class="space-y-3">
+            <router-link to="/companies" class="block">
+              <Button variant="default" size="lg" class="w-full bg-mint-500 hover:bg-mint-600 font-semibold shadow-lg rounded-xl cursor-pointer flex items-center justify-center gap-2">
+                <Building2 class="w-5 h-5" />
+                Gestión de Empresas B2B
+              </Button>
+            </router-link>
+
+            <router-link to="/contracts" class="block">
+              <Button variant="secondary" size="lg" class="w-full bg-navy-900 hover:bg-navy-800 font-semibold shadow-lg rounded-xl cursor-pointer flex items-center justify-center gap-2">
+                <FileText class="w-5 h-5 text-mint-400" />
+                Convenios & Contratos B2B
+              </Button>
+            </router-link>
+          </div>
         </template>
 
         <template v-else>
           <p class="text-sm text-slate-600 mb-4">Inicia sesión con tus credenciales corporativas para acceder al sistema.</p>
           <router-link to="/login">
-            <Button variant="default" size="lg" class="w-full bg-mint-500 hover:bg-mint-600 font-semibold rounded-xl">
+            <Button variant="default" size="lg" class="w-full bg-mint-500 hover:bg-mint-600 font-semibold rounded-xl cursor-pointer">
               Iniciar Sesión
             </Button>
           </router-link>

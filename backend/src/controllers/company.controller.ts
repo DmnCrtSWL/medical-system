@@ -7,7 +7,7 @@ export const getCompanies = async (_req: Request, res: Response): Promise<void> 
       orderBy: { createdAt: 'desc' },
     });
     res.status(200).json(companies);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching companies:', error);
     res.status(500).json({ message: 'Error fetching companies' });
   }
@@ -31,7 +31,7 @@ export const getCompanyById = async (req: Request, res: Response): Promise<void>
     }
 
     res.status(200).json(company);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching company by ID:', error);
     res.status(500).json({ message: 'Error fetching company details' });
   }
@@ -66,7 +66,7 @@ export const createCompany = async (req: Request, res: Response): Promise<void> 
     });
 
     res.status(201).json({ message: 'Company created successfully', company });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating company:', error);
     res.status(500).json({ message: 'Error creating company' });
   }
@@ -107,7 +107,7 @@ export const updateCompany = async (req: Request, res: Response): Promise<void> 
     });
 
     res.status(200).json({ message: 'Company updated successfully', company: updatedCompany });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error updating company:', error);
     res.status(500).json({ message: 'Error updating company' });
   }
@@ -131,7 +131,7 @@ export const deleteCompany = async (req: Request, res: Response): Promise<void> 
     });
 
     res.status(200).json({ message: 'Company deleted successfully' });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error deleting company:', error);
     res.status(500).json({ message: 'Error deleting company' });
   }

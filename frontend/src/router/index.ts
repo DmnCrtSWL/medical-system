@@ -20,13 +20,20 @@ const router = createRouter({
       name: 'companies',
       component: () => import('../views/CompaniesView.vue'),
     },
+    {
+      path: '/doctors',
+      name: 'doctors',
+      component: () => import('../views/DoctorsView.vue'),
+    },
   ],
 });
 
 // Guard de Navegacion: Redirigir a /login si intenta acceder a rutas protegidas sin token JWT
 router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token');
-  if (to.name === 'companies' && !token) {
+  const protectedRoutes = ['companies', 'doctors'];
+  
+  if (protectedRoutes.includes(to.name as string) && !token) {
     next({ name: 'login' });
   } else {
     next();

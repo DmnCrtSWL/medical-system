@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Building2, FileText, LogOut, ShieldCheck } from 'lucide-vue-next';
+import { Building2, Stethoscope, FileText, LogOut, ShieldCheck } from 'lucide-vue-next';
 import { useAuthStore } from '../stores/auth';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import Button from '../components/ui/Button.vue';
@@ -74,9 +74,16 @@ const handleLogout = () => {
               </Button>
             </router-link>
 
-            <router-link to="/contracts" class="block">
+            <router-link to="/doctors" class="block">
               <Button variant="secondary" size="lg" class="w-full bg-navy-900 hover:bg-navy-800 font-semibold shadow-lg rounded-xl cursor-pointer flex items-center justify-center gap-2">
-                <FileText class="w-5 h-5 text-mint-400" />
+                <Stethoscope class="w-5 h-5 text-mint-400" />
+                Plantilla de Doctores
+              </Button>
+            </router-link>
+
+            <router-link to="/contracts" class="block">
+              <Button variant="outline" size="lg" class="w-full border-slate-700 text-navy-900 hover:bg-slate-100 font-semibold shadow-lg rounded-xl cursor-pointer flex items-center justify-center gap-2">
+                <FileText class="w-5 h-5 text-navy-900" />
                 Convenios & Contratos B2B
               </Button>
             </router-link>

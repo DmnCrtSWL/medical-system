@@ -19,6 +19,20 @@ enum ContractStatus {
   EXPIRED
 }
 
+enum TransactionType {
+  INCOME
+  EXPENSE
+  HONORARIUM
+}
+
+enum TransactionCategory {
+  B2B_CONTRACT
+  DOCTOR_HONORARIUM
+  CONSULTATION_FEE
+  EQUIPMENT_MAINTENANCE
+  OTHER
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -34,17 +48,18 @@ model User {
 }
 
 model Company {
-  id        String     @id @default(uuid())
+  id        String   @id @default(uuid())
   name      String
-  taxId     String?    @unique
+  taxId     String?  @unique
   address   String?
   phone     String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  patients  Patient[]
-  contracts Contract[]
-  doctors   Doctor[]
+  patients     Patient[]
+  contracts    Contract[]
+  doctors      Doctor[]
+  transactions Transaction[]
 
   @@map("companies")
 }
@@ -60,6 +75,8 @@ model Doctor {
   company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
 
   @@map("doctors")
 }
@@ -92,4 +109,21 @@ model Contract {
   updatedAt DateTime       @updatedAt
 
   @@map("contracts")
+}
+
+model Transaction {
+  id          String              @id @default(uuid())
+  description String
+  amount      Float
+  type        TransactionType     @default(INCOME)
+  category    TransactionCategory @default(B2B_CONTRACT)
+  companyId   String?
+  company     Company?            @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  doctorId    String?
+  doctor      Doctor?             @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  date        DateTime            @default(now())
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@map("transactions")
 }

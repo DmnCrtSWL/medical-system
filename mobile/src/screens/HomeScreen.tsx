@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   StatusBar,
+  Platform,
 } from 'react-native';
 import {
   Stethoscope,
@@ -104,6 +105,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    paddingTop: Platform.OS === 'ios' ? 64 : 24,
     paddingBottom: 40,
     maxWidth: 600,
     width: '100%',

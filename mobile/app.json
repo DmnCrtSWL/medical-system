@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "MedSys Mobile",
+    "slug": "medsys-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "backgroundColor": "#0F172A"
+    }
+  }
+}

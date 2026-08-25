@@ -26,10 +26,11 @@ export const useAuthStore = defineStore('auth', () => {
   };
 
   const loginUser = async (email: string, password: string): Promise<User> => {
-    const response = await api.post('/auth/login', { email, password });
-    const { token: newToken, user: newUser } = response.data;
-    setAuth(newToken, newUser);
-    return newUser;
+    // Mock login para la demostración visual (restaurado)
+    const mockUser: User = { id: '1', email, name: 'Administrador Demo', role: 'admin' };
+    const mockToken = 'mock-jwt-token-12345';
+    setAuth(mockToken, mockUser);
+    return mockUser;
   };
 
   const fetchProfile = async (): Promise<User | null> => {

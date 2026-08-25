@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '../stores/auth';
 import { useRouter, RouterLink } from 'vue-router';
-import { Building2, FileText, LogOut, TrendingUp, Stethoscope } from 'lucide-vue-next';
+import { Building2, FileText, LogOut, TrendingUp, Stethoscope, DollarSign } from 'lucide-vue-next';
 import Button from '../components/ui/Button.vue';
 
 const authStore = useAuthStore();
@@ -27,7 +27,7 @@ const handleLogout = () => {
       <div class="p-6 flex-1">
         <p class="text-xs uppercase tracking-widest text-slate-400 mb-4">Módulos</p>
         <nav class="space-y-2">
-          <RouterLink to="/" class="flex items-center gap-3 px-4 py-3 bg-mint-500/10 text-mint-400 rounded-xl transition-all font-medium">
+          <RouterLink to="/" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-navy-800 hover:text-white rounded-xl transition-all font-medium">
             <TrendingUp class="w-5 h-5" /> Panel Principal
           </RouterLink>
           <RouterLink to="/companies" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-navy-800 hover:text-white rounded-xl transition-all font-medium">
@@ -38,6 +38,9 @@ const handleLogout = () => {
           </RouterLink>
           <RouterLink to="/contracts" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-navy-800 hover:text-white rounded-xl transition-all font-medium">
             <FileText class="w-5 h-5" /> Contratos
+          </RouterLink>
+          <RouterLink to="/finance" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-navy-800 hover:text-white rounded-xl transition-all font-medium">
+            <DollarSign class="w-5 h-5" /> Caja & Finanzas
           </RouterLink>
         </nav>
       </div>

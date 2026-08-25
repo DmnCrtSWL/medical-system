@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
 import companyRoutes from './routes/company.routes';
+import doctorRoutes from './routes/doctor.routes';
 import financeRoutes from './routes/finance.routes';
 
 dotenv.config();
@@ -20,6 +21,7 @@ app.use(express.json());
 // Enrutadores Principales
 app.use('/api/auth', authRoutes);
 app.use('/api/companies', companyRoutes);
+app.use('/api/doctors', doctorRoutes);
 app.use('/api/finance', financeRoutes);
 
 // Endpoint de Salud / Prueba

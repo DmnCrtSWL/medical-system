@@ -43,7 +43,9 @@ export interface PatientRecord {
   email?: string | null;
   phone?: string | null;
   dateOfBirth?: string | null;
-  companyId: string;
+  companyId?: string | null;
+  companyName?: string | null;
+  employeeNumber?: string | null;
 }
 
 export interface VitalSigns {
@@ -56,12 +58,13 @@ export interface VitalSigns {
   bmi?: number;
 }
 
-export interface ClinicalConsultation {
-  localId: string;
-  serverId?: string;
-  patientId: string;
-  doctorId: string;
-  companyId: string;
+export interface ClinicalConsultationInput {
+  patientName: string;
+  patientAge?: number;
+  companyName?: string;
+  employeeNumber?: string;
+  doctorId?: string;
+  doctorName?: string;
   chiefComplaint: string;
   symptoms: string;
   vitalSigns: VitalSigns;
@@ -69,6 +72,11 @@ export interface ClinicalConsultation {
   diagnosisDescription: string;
   treatmentPlan: string;
   prescriptionNotes?: string;
+}
+
+export interface ClinicalConsultation extends ClinicalConsultationInput {
+  localId: string;
+  serverId?: string;
   createdAt: string;
   syncStatus: SyncStatus;
 }

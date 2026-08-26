@@ -1,0 +1,254 @@
+import React from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  ScrollView,
+  StatusBar,
+  Platform,
+} from 'react-native';
+import {
+  Stethoscope,
+  Wifi,
+  FileSpreadsheet,
+  RefreshCw,
+  UserCheck,
+  Building2,
+  ChevronRight,
+} from 'lucide-react-native';
+
+export const HomeScreen: React.FC = () => {
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
+
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {/* Top Header */}
+        <View style={styles.header}>
+          <View style={styles.logoRow}>
+            <View style={styles.logoBadge}>
+              <Stethoscope size={28} color="#34D399" />
+            </View>
+            <View>
+              <Text style={styles.brandTitle}>MedSys Mobile</Text>
+              <Text style={styles.brandSubtitle}>App de Consultorio para Médicos</Text>
+            </View>
+          </View>
+
+          {/* Connection Badge */}
+          <View style={styles.statusBadge}>
+            <Wifi size={14} color="#34D399" />
+            <Text style={styles.statusText}>Modo En Línea (Listo)</Text>
+          </View>
+        </View>
+
+        {/* Doctor Card Profile */}
+        <View style={styles.doctorCard}>
+          <View style={styles.doctorAvatar}>
+            <UserCheck size={26} color="#FFFFFF" />
+          </View>
+          <View style={styles.doctorInfo}>
+            <Text style={styles.doctorName}>Dr. Carlos Mendoza</Text>
+            <Text style={styles.doctorSpecialty}>Medicina General & Salud Ocupacional</Text>
+            <View style={styles.companyChip}>
+              <Building2 size={12} color="#34D399" />
+              <Text style={styles.companyText}>TechCorp Mexico (Planta 1)</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Quick Actions */}
+        <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
+
+        <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
+          <View style={[styles.actionIconContainer, { backgroundColor: 'rgba(52, 211, 153, 0.15)' }]}>
+            <FileSpreadsheet size={24} color="#34D399" />
+          </View>
+          <View style={styles.actionTextContainer}>
+            <Text style={styles.actionTitle}>Nueva Historia Clínica</Text>
+            <Text style={styles.actionDescription}>Captura datos de consulta en modo local/offline</Text>
+          </View>
+          <ChevronRight size={20} color="#64748B" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
+          <View style={[styles.actionIconContainer, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
+            <RefreshCw size={24} color="#60A5FA" />
+          </View>
+          <View style={styles.actionTextContainer}>
+            <Text style={styles.actionTitle}>Cola de Sincronización</Text>
+            <Text style={styles.actionDescription}>0 expedientes pendientes por subir al servidor</Text>
+          </View>
+          <ChevronRight size={20} color="#64748B" />
+        </TouchableOpacity>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>MedSys Native Engine v1.0.0</Text>
+          <Text style={styles.footerSubtext}>Sincronización Automática con Servidor B2B</Text>
+        </View>
+      </ScrollView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0F172A',
+    width: '100%',
+  },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContent: {
+    padding: 20,
+    paddingTop: Platform.OS === 'ios' ? 64 : 24,
+    paddingBottom: 40,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  header: {
+    marginBottom: 24,
+  },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  logoBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.3)',
+  },
+  brandTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  brandSubtitle: {
+    fontSize: 13,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(52, 211, 153, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.2)',
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#34D399',
+    marginLeft: 6,
+  },
+  doctorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E293B',
+    padding: 16,
+    borderRadius: 20,
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  doctorAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#3B82F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  doctorInfo: {
+    flex: 1,
+  },
+  doctorName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  doctorSpecialty: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  companyChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  companyText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#34D399',
+    marginLeft: 4,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#F8FAFC',
+    marginBottom: 14,
+  },
+  actionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E293B',
+    padding: 16,
+    borderRadius: 20,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  actionIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  actionTextContainer: {
+    flex: 1,
+  },
+  actionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  actionDescription: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  footer: {
+    marginTop: 32,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  footerSubtext: {
+    fontSize: 11,
+    color: '#475569',
+    marginTop: 2,
+  },
+});

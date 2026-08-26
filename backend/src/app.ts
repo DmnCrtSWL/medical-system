@@ -8,6 +8,7 @@ import companyRoutes from './routes/company.routes';
 import doctorRoutes from './routes/doctor.routes';
 import contractRoutes from './routes/contract.routes';
 import financeRoutes from './routes/finance.routes';
+import consultationRoutes from './routes/consultation.routes';
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use('/api/companies', companyRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/contracts', contractRoutes);
 app.use('/api/finance', financeRoutes);
+app.use('/api/consultations', consultationRoutes);
 
 // Endpoint de Salud / Prueba
 app.get('/api/health', (_req: Request, res: Response) => {

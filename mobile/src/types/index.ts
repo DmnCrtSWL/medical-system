@@ -7,6 +7,25 @@ export interface DoctorUser {
   role: string;
 }
 
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  message?: string;
+  token: string;
+  user: DoctorUser;
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  user: DoctorUser | null;
+  token: string | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
 export interface DoctorProfile {
   id: string;
   userId: string;

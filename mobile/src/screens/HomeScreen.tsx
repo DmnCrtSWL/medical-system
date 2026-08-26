@@ -7,6 +7,7 @@ import {
   ScrollView,
   StatusBar,
   Platform,
+  Alert,
 } from 'react-native';
 import {
   Stethoscope,
@@ -16,9 +17,33 @@ import {
   UserCheck,
   Building2,
   ChevronRight,
+  LogOut,
 } from 'lucide-react-native';
+import { DoctorUser } from '../types';
 
-export const HomeScreen: React.FC = () => {
+interface HomeScreenProps {
+  user: DoctorUser;
+  onLogout: () => void;
+}
+
+export const HomeScreen: React.FC<HomeScreenProps> = ({ user, onLogout }) => {
+  const handleLogoutPress = () => {
+    if (Platform.OS === 'web') {
+      if (window.confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+        onLogout();
+      }
+    } else {
+      Alert.alert(
+        'Cerrar Sesión',
+        '¿Estás seguro de que deseas salir del consultorio?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Salir', style: 'destructive', onPress: onLogout },
+        ]
+      );
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
@@ -26,14 +51,26 @@ export const HomeScreen: React.FC = () => {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Top Header */}
         <View style={styles.header}>
-          <View style={styles.logoRow}>
-            <View style={styles.logoBadge}>
-              <Stethoscope size={28} color="#34D399" />
+          <View style={styles.headerTopRow}>
+            <View style={styles.logoRow}>
+              <View style={styles.logoBadge}>
+                <Stethoscope size={28} color="#34D399" />
+              </View>
+              <View>
+                <Text style={styles.brandTitle}>MedSys Mobile</Text>
+                <Text style={styles.brandSubtitle}>App de Consultorio para Médicos</Text>
+              </View>
             </View>
-            <View>
-              <Text style={styles.brandTitle}>MedSys Mobile</Text>
-              <Text style={styles.brandSubtitle}>App de Consultorio para Médicos</Text>
-            </View>
+
+            {/* Logout Button */}
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={handleLogoutPress}
+              activeOpacity={0.7}
+              accessibilityLabel="Cerrar sesión"
+            >
+              <LogOut size={20} color="#F87171" />
+            </TouchableOpacity>
           </View>
 
           {/* Connection Badge */}
@@ -49,16 +86,18 @@ export const HomeScreen: React.FC = () => {
             <UserCheck size={26} color="#FFFFFF" />
           </View>
           <View style={styles.doctorInfo}>
-            <Text style={styles.doctorName}>Dr. Carlos Mendoza</Text>
-            <Text style={styles.doctorSpecialty}>Medicina General & Salud Ocupacional</Text>
+            <Text style={styles.doctorName}>{user.name || 'Médico General'}</Text>
+            <Text style={styles.doctorEmail}>{user.email}</Text>
             <View style={styles.companyChip}>
               <Building2 size={12} color="#34D399" />
-              <Text style={styles.companyText}>TechCorp Mexico (Planta 1)</Text>
+              <Text style={styles.companyText}>
+                {user.role === 'DOCTOR' ? 'Médico Certificado In-House' : `Rol: ${user.role}`}
+              </Text>
             </View>
           </View>
         </View>
 
-        {/* Quick Actions */}
+        {/* Quick Actions Grid */}
         <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
 
         <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
@@ -83,10 +122,10 @@ export const HomeScreen: React.FC = () => {
           <ChevronRight size={20} color="#64748B" />
         </TouchableOpacity>
 
-        {/* Footer */}
+        {/* System Footer Info */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>MedSys Native Engine v1.0.0</Text>
-          <Text style={styles.footerSubtext}>Sincronización Automática con Servidor B2B</Text>
+          <Text style={styles.footerSubtext}>Sesión autenticada vía JWT Seguro</Text>
         </View>
       </ScrollView>
     </View>
@@ -114,10 +153,26 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 24,
   },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    flex: 1,
+  },
+  logoutButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
   },
   logoBadge: {
     width: 48,
@@ -134,6 +189,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     color: '#FFFFFF',
+    letterSpacing: -0.5,
   },
   brandSubtitle: {
     fontSize: 13,
@@ -184,7 +240,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  doctorSpecialty: {
+  doctorEmail: {
     fontSize: 12,
     color: '#94A3B8',
     marginTop: 2,

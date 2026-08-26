@@ -74,6 +74,33 @@ export const consultationsService = {
   },
 
   /**
+   * Actualiza el estado de las consultas a 'SYNCED' con su respectivo serverId
+   */
+  async markMultipleAsSynced(syncedItems: Array<{ localId: string; serverId: string }>): Promise<void> {
+    try {
+      const consultations = await this.getLocalConsultations();
+      const syncedMap = new Map(syncedItems.map((item) => [item.localId, item.serverId]));
+
+      const updated = consultations.map((c) => {
+        if (syncedMap.has(c.localId)) {
+          return {
+            ...c,
+            serverId: syncedMap.get(c.localId),
+            syncStatus: 'SYNCED' as const,
+          };
+        }
+        return c;
+      });
+
+      await AsyncStorage.setItem(OFFLINE_CONSULTATIONS_KEY, JSON.stringify(updated));
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        throw new Error(`Error al actualizar estado de sincronización: ${err.message}`);
+      }
+    }
+  },
+
+  /**
    * Limpia todas las consultas locales (utilidad de desarrollo o reset)
    */
   async clearAllConsultations(): Promise<void> {

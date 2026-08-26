@@ -4,6 +4,7 @@ import { HomeScreen } from './src/screens/HomeScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { NewConsultationScreen } from './src/screens/NewConsultationScreen';
 import { authService } from './src/services/auth';
+import { syncEngine } from './src/services/syncEngine';
 import { DoctorUser } from './src/types';
 
 type ActiveScreen = 'HOME' | 'NEW_CONSULTATION';
@@ -33,6 +34,24 @@ export default function App() {
     checkSession();
   }, []);
 
+  // Intento de sincronización automática en segundo plano cuando el médico está autenticado
+  useEffect(() => {
+    if (user) {
+      const runBackgroundSync = async () => {
+        const isOnline = await syncEngine.checkServerConnection();
+        if (isOnline) {
+          try {
+            await syncEngine.syncPendingConsultations();
+          } catch {
+            // Sincronización silenciosa en background sin interrumpir la experiencia del usuario
+          }
+        }
+      };
+
+      runBackgroundSync();
+    }
+  }, [user]);
+
   const handleLoginSuccess = (authenticatedUser: DoctorUser, authToken: string) => {
     setUser(authenticatedUser);
     setToken(authToken);
@@ -44,6 +63,16 @@ export default function App() {
     setUser(null);
     setToken(null);
     setCurrentScreen('HOME');
+  };
+
+  const handleConsultationSaved = () => {
+    setCurrentScreen('HOME');
+    // Al guardar una consulta, intentar sincronizar de inmediato si hay conexión
+    syncEngine.checkServerConnection().then((isOnline) => {
+      if (isOnline) {
+        syncEngine.syncPendingConsultations().catch(() => {});
+      }
+    });
   };
 
   // Pantalla de carga mientras se verifica la sesión en AsyncStorage
@@ -69,8 +98,9 @@ export default function App() {
         />
       ) : (
         <NewConsultationScreen
+          user={user}
           onBack={() => setCurrentScreen('HOME')}
-          onSaveSuccess={() => setCurrentScreen('HOME')}
+          onSaveSuccess={handleConsultationSaved}
         />
       )}
     </View>

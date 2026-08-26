@@ -88,12 +88,52 @@ export const authService = {
   },
 
   /**
+   * Obtiene la empresa corporativa asignada al doctor desde el backend (o caché offline)
+   */
+  async getDoctorAssignedCompany(): Promise<string | null> {
+    try {
+      const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+      const userJson = await AsyncStorage.getItem(AUTH_USER_KEY);
+      if (!token || !userJson) {
+        return await AsyncStorage.getItem('@medsys_doctor_company');
+      }
+
+      const user = JSON.parse(userJson) as DoctorUser;
+      const response = await fetch(`${getBaseApiUrl()}/doctors`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const doctors = (await response.json()) as Array<{
+          user: { email: string };
+          company?: { name: string } | null;
+        }>;
+
+        const myDoctor = doctors.find((d) => d.user.email === user.email);
+        if (myDoctor?.company?.name) {
+          await AsyncStorage.setItem('@medsys_doctor_company', myDoctor.company.name);
+          return myDoctor.company.name;
+        }
+      }
+
+      return await AsyncStorage.getItem('@medsys_doctor_company');
+    } catch {
+      return await AsyncStorage.getItem('@medsys_doctor_company');
+    }
+  },
+
+  /**
    * Cierra la sesión y elimina las credenciales locales
    */
   async logout(): Promise<void> {
     try {
       await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
       await AsyncStorage.removeItem(AUTH_USER_KEY);
+      await AsyncStorage.removeItem('@medsys_doctor_company');
     } catch {
       // Ignorar errores al limpiar almacenamiento
     }

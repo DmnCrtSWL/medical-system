@@ -1,16 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
 import { consultationsService } from './consultations';
+import { getBaseApiUrl } from './auth';
 
 const AUTH_TOKEN_KEY = '@medsys_mobile_token';
-
-// URL del backend: puerto 4000 (localhost en iOS/Web, 10.0.2.2 en Android Emulator)
-const getBaseApiUrl = (): string => {
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:4000/api';
-  }
-  return 'http://localhost:4000/api';
-};
 
 export interface SyncReport {
   success: boolean;

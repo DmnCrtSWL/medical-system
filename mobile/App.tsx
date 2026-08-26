@@ -2,13 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text, StatusBar } from 'react-native';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
+import { NewConsultationScreen } from './src/screens/NewConsultationScreen';
 import { authService } from './src/services/auth';
 import { DoctorUser } from './src/types';
+
+type ActiveScreen = 'HOME' | 'NEW_CONSULTATION';
 
 export default function App() {
   const [user, setUser] = useState<DoctorUser | null>(null);
   const [, setToken] = useState<string | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState<boolean>(true);
+  const [currentScreen, setCurrentScreen] = useState<ActiveScreen>('HOME');
 
   // Restaurar sesión persistida al iniciar la app
   useEffect(() => {
@@ -32,12 +36,14 @@ export default function App() {
   const handleLoginSuccess = (authenticatedUser: DoctorUser, authToken: string) => {
     setUser(authenticatedUser);
     setToken(authToken);
+    setCurrentScreen('HOME');
   };
 
   const handleLogout = async () => {
     await authService.logout();
     setUser(null);
     setToken(null);
+    setCurrentScreen('HOME');
   };
 
   // Pantalla de carga mientras se verifica la sesión en AsyncStorage
@@ -53,10 +59,19 @@ export default function App() {
 
   return (
     <View style={styles.root}>
-      {user ? (
-        <HomeScreen user={user} onLogout={handleLogout} />
-      ) : (
+      {!user ? (
         <LoginScreen onLoginSuccess={handleLoginSuccess} />
+      ) : currentScreen === 'HOME' ? (
+        <HomeScreen
+          user={user}
+          onLogout={handleLogout}
+          onNavigateToNewConsultation={() => setCurrentScreen('NEW_CONSULTATION')}
+        />
+      ) : (
+        <NewConsultationScreen
+          onBack={() => setCurrentScreen('HOME')}
+          onSaveSuccess={() => setCurrentScreen('HOME')}
+        />
       )}
     </View>
   );

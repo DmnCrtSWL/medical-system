@@ -33,6 +33,12 @@ enum TransactionCategory {
   OTHER
 }
 
+enum ConsultationStatus {
+  COMPLETED
+  FOLLOW_UP_REQUIRED
+  REFERRED
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -56,10 +62,11 @@ model Company {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  patients     Patient[]
-  contracts    Contract[]
-  doctors      Doctor[]
-  transactions Transaction[]
+  patients      Patient[]
+  contracts     Contract[]
+  doctors       Doctor[]
+  transactions  Transaction[]
+  consultations Consultation[]
 
   @@map("companies")
 }
@@ -76,22 +83,25 @@ model Doctor {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  transactions Transaction[]
+  transactions  Transaction[]
+  consultations Consultation[]
 
   @@map("doctors")
 }
 
 model Patient {
-  id          String    @id @default(uuid())
-  firstName   String
-  lastName    String
-  email       String?
-  phone       String?
-  dateOfBirth DateTime?
-  companyId   String
-  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id             String         @id @default(uuid())
+  firstName      String
+  lastName       String
+  email          String?
+  phone          String?
+  dateOfBirth    DateTime?
+  employeeNumber String?
+  companyId      String
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  consultations  Consultation[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   @@map("patients")
 }
@@ -126,4 +136,33 @@ model Transaction {
   updatedAt   DateTime            @updatedAt
 
   @@map("transactions")
+}
+
+model Consultation {
+  id                     String             @id @default(uuid())
+  localId                String?            @unique
+  patientId              String
+  patient                Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId               String?
+  doctor                 Doctor?            @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  companyId              String
+  company                Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  chiefComplaint         String
+  symptoms               String?
+  diagnosisDescription   String
+  treatmentPlan          String
+  prescriptionNotes      String?
+  bloodPressureSystolic  Int?
+  bloodPressureDiastolic Int?
+  heartRate              Int?
+  temperature            Float?
+  weightKg               Float?
+  heightCm               Float?
+  bmi                    Float?
+  status                 ConsultationStatus @default(COMPLETED)
+  consultationDate       DateTime           @default(now())
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  @@map("consultations")
 }

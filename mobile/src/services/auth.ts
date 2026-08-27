@@ -1,16 +1,27 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { Platform, NativeModules } from 'react-native';
 import { AuthResponse, DoctorUser, LoginCredentials } from '../types';
 
 const AUTH_TOKEN_KEY = '@medsys_mobile_token';
 const AUTH_USER_KEY = '@medsys_mobile_user';
 
-// URL del backend: puerto 4000 para backend API (localhost para iOS/Web, 10.0.2.2 para Android)
-const getBaseApiUrl = (): string => {
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:4000/api';
+// URL del backend: Detecta automáticamente la IP de la máquina de desarrollo para dispositivos físicos
+export const getBaseApiUrl = (): string => {
+  if (Platform.OS === 'web') {
+    return 'http://localhost:4000/api';
   }
-  return 'http://localhost:4000/api';
+
+  // Detectar la IP del host Metro cuando corre en Expo Go en un dispositivo físico
+  const scriptURL: string | undefined = NativeModules.SourceCode?.scriptURL;
+  if (scriptURL) {
+    const address = scriptURL.split('://')[1]?.split('/')[0]?.split(':')[0];
+    if (address && address !== 'localhost' && address !== '127.0.0.1') {
+      return `http://${address}:4000/api`;
+    }
+  }
+
+  // Fallback a IP local de la red Wi-Fi para dispositivos físicos
+  return 'http://192.168.100.5:4000/api';
 };
 
 export const authService = {
@@ -88,12 +99,52 @@ export const authService = {
   },
 
   /**
+   * Obtiene la empresa corporativa asignada al doctor desde el backend (o caché offline)
+   */
+  async getDoctorAssignedCompany(): Promise<string | null> {
+    try {
+      const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+      const userJson = await AsyncStorage.getItem(AUTH_USER_KEY);
+      if (!token || !userJson) {
+        return await AsyncStorage.getItem('@medsys_doctor_company');
+      }
+
+      const user = JSON.parse(userJson) as DoctorUser;
+      const response = await fetch(`${getBaseApiUrl()}/doctors`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const doctors = (await response.json()) as Array<{
+          user: { email: string };
+          company?: { name: string } | null;
+        }>;
+
+        const myDoctor = doctors.find((d) => d.user.email === user.email);
+        if (myDoctor?.company?.name) {
+          await AsyncStorage.setItem('@medsys_doctor_company', myDoctor.company.name);
+          return myDoctor.company.name;
+        }
+      }
+
+      return await AsyncStorage.getItem('@medsys_doctor_company');
+    } catch {
+      return await AsyncStorage.getItem('@medsys_doctor_company');
+    }
+  },
+
+  /**
    * Cierra la sesión y elimina las credenciales locales
    */
   async logout(): Promise<void> {
     try {
       await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
       await AsyncStorage.removeItem(AUTH_USER_KEY);
+      await AsyncStorage.removeItem('@medsys_doctor_company');
     } catch {
       // Ignorar errores al limpiar almacenamiento
     }

@@ -10,10 +10,12 @@ import {
   Alert,
   Modal,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import {
   Stethoscope,
   Wifi,
+  WifiOff,
   FileSpreadsheet,
   RefreshCw,
   UserCheck,
@@ -23,9 +25,13 @@ import {
   X,
   Trash2,
   Clock,
-  CheckCircle,
+  CheckCircle2,
+  Cloud,
+  Check,
 } from 'lucide-react-native';
 import { consultationsService } from '../services/consultations';
+import { syncEngine } from '../services/syncEngine';
+import { authService } from '../services/auth';
 import { ClinicalConsultation, DoctorUser } from '../types';
 
 interface HomeScreenProps {
@@ -42,6 +48,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [consultations, setConsultations] = useState<ClinicalConsultation[]>([]);
   const [isQueueModalVisible, setIsQueueModalVisible] = useState<boolean>(false);
+  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [syncingItemId, setSyncingItemId] = useState<string | null>(null);
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
+  const [doctorCompany, setDoctorCompany] = useState<string | null>(null);
 
   const loadConsultationsData = useCallback(async () => {
     try {
@@ -50,13 +61,113 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       const count = list.filter((c) => c.syncStatus === 'PENDING').length;
       setPendingCount(count);
     } catch {
-      // Ignorar errores en carga de datos locales
+      // Ignorar errores en lectura local
     }
+  }, []);
+
+  const checkConnectivity = useCallback(async () => {
+    const connected = await syncEngine.checkServerConnection();
+    setIsOnline(connected);
+    return connected;
   }, []);
 
   useEffect(() => {
     loadConsultationsData();
-  }, [loadConsultationsData]);
+    checkConnectivity();
+
+    // Cargar empresa asignada al médico desde el backend
+    authService.getDoctorAssignedCompany().then((company) => {
+      if (company) {
+        setDoctorCompany(company);
+      }
+    });
+
+    // Comprobar estado de conexión periódicamente cada 15 segundos
+    const interval = setInterval(() => {
+      checkConnectivity();
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [loadConsultationsData, checkConnectivity]);
+
+  const handleSyncNow = async () => {
+    setIsSyncing(true);
+    setSyncFeedback(null);
+
+    const isConnected = await checkConnectivity();
+    if (!isConnected) {
+      setIsSyncing(false);
+      const msg = 'Sin conexión con el servidor. Verifica que el backend esté activo.';
+      if (Platform.OS === 'web') {
+        alert(msg);
+      } else {
+        Alert.alert('Servidor no disponible', msg);
+      }
+      return;
+    }
+
+    try {
+      const result = await syncEngine.syncPendingConsultations();
+      await loadConsultationsData();
+
+      setSyncFeedback(result.message);
+
+      if (Platform.OS === 'web') {
+        alert(result.message);
+      } else {
+        Alert.alert(
+          result.success ? 'Sincronización Exitosa' : 'Aviso de Sincronización',
+          result.message
+        );
+      }
+    } catch (err: unknown) {
+      const errMessage = err instanceof Error ? err.message : 'Error al sincronizar';
+      if (Platform.OS === 'web') {
+        alert(errMessage);
+      } else {
+        Alert.alert('Error', errMessage);
+      }
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleSyncSingle = async (localId: string, patientName: string) => {
+    setSyncingItemId(localId);
+    try {
+      const isConnected = await checkConnectivity();
+      if (!isConnected) {
+        const msg = 'Sin conexión con el servidor. Verifica que el backend esté activo.';
+        if (Platform.OS === 'web') {
+          alert(msg);
+        } else {
+          Alert.alert('Servidor no disponible', msg);
+        }
+        return;
+      }
+
+      const result = await syncEngine.syncSingleConsultation(localId);
+      await loadConsultationsData();
+
+      if (Platform.OS === 'web') {
+        alert(result.message);
+      } else {
+        Alert.alert(
+          result.success ? 'Expediente Sincronizado' : 'Aviso de Sincronización',
+          result.message
+        );
+      }
+    } catch (err: unknown) {
+      const errMessage = err instanceof Error ? err.message : 'Error al sincronizar';
+      if (Platform.OS === 'web') {
+        alert(errMessage);
+      } else {
+        Alert.alert('Error', errMessage);
+      }
+    } finally {
+      setSyncingItemId(null);
+    }
+  };
 
   const handleLogoutPress = () => {
     if (Platform.OS === 'web') {
@@ -87,8 +198,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       }
     } else {
       Alert.alert(
-        'Eliminar Consulta Local',
-        `¿Estás seguro de eliminar el registro de ${patientName}?`,
+        'Eliminar Registro Local',
+        `¿Deseas eliminar del dispositivo el registro de ${patientName}?`,
         [
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Eliminar', style: 'destructive', onPress: confirmDelete },
@@ -99,6 +210,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const openQueueModal = async () => {
     await loadConsultationsData();
+    await checkConnectivity();
     setIsQueueModalVisible(true);
   };
 
@@ -131,11 +243,24 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Connection Badge */}
-          <View style={styles.statusBadge}>
-            <Wifi size={14} color="#34D399" />
-            <Text style={styles.statusText}>Modo En Línea (Listo)</Text>
-          </View>
+          {/* Dynamic Connection Badge */}
+          <TouchableOpacity
+            style={isOnline ? styles.statusBadgeOnline : styles.statusBadgeOffline}
+            onPress={checkConnectivity}
+            activeOpacity={0.7}
+          >
+            {isOnline ? (
+              <>
+                <Wifi size={14} color="#34D399" />
+                <Text style={styles.statusTextOnline}>Modo En Línea (Listo)</Text>
+              </>
+            ) : (
+              <>
+                <WifiOff size={14} color="#FBBF24" />
+                <Text style={styles.statusTextOffline}>Modo Sin Conexión (Offline)</Text>
+              </>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* Doctor Card Profile */}
@@ -151,13 +276,43 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <View style={styles.companyChip}>
               <Building2 size={12} color="#34D399" />
               <Text style={styles.companyText}>
-                {user?.role === 'DOCTOR' ? 'Médico Certificado In-House' : 'Médico General & Salud Ocupacional'}
+                {doctorCompany ? `Médico In-House en ${doctorCompany}` : 'Médico Certificado In-House'}
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Quick Actions Grid */}
+        {/* Banner de Sincronización Rápida si hay pendientes */}
+        {pendingCount > 0 && (
+          <View style={styles.syncAlertCard}>
+            <View style={styles.syncAlertInfo}>
+              <Cloud size={20} color="#FBBF24" style={{ marginRight: 10 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.syncAlertTitle}>
+                  {pendingCount === 1 ? '1 expediente listo' : `${pendingCount} expedientes listos`}
+                </Text>
+                <Text style={styles.syncAlertSubtitle}>Pendientes de subir a la nube B2B</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={[styles.syncNowButton, isSyncing && styles.syncNowButtonDisabled]}
+              onPress={handleSyncNow}
+              disabled={isSyncing}
+              activeOpacity={0.8}
+            >
+              {isSyncing ? (
+                <ActivityIndicator size="small" color="#0F172A" />
+              ) : (
+                <>
+                  <RefreshCw size={14} color="#0F172A" style={{ marginRight: 6 }} />
+                  <Text style={styles.syncNowButtonText}>Subir Ahora</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Acciones Rápidas */}
         <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
 
         {/* Acción 1: Nueva Historia Clínica */}
@@ -188,14 +343,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <View style={styles.actionTextContainer}>
             <Text style={styles.actionTitle}>Cola de Sincronización</Text>
             <Text style={styles.actionDescription}>
-              {pendingCount === 1
-                ? '1 expediente pendiente por subir al servidor'
-                : `${pendingCount} expedientes pendientes por subir al servidor`}
+              {pendingCount === 0
+                ? 'Todos los expedientes sincronizados'
+                : pendingCount === 1
+                ? '1 expediente pendiente por subir'
+                : `${pendingCount} expedientes pendientes por subir`}
             </Text>
           </View>
-          {pendingCount > 0 && (
-            <View style={styles.countBadge}>
-              <Text style={styles.countBadgeText}>{pendingCount}</Text>
+          {pendingCount > 0 ? (
+            <View style={styles.countBadgePending}>
+              <Text style={styles.countBadgeTextPending}>{pendingCount}</Text>
+            </View>
+          ) : (
+            <View style={styles.countBadgeSynced}>
+              <Check size={12} color="#34D399" />
             </View>
           )}
           <ChevronRight size={20} color="#64748B" />
@@ -204,11 +365,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         {/* Footer Info */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>MedSys Native Engine v1.0.0</Text>
-          <Text style={styles.footerSubtext}>Motor de Almacenamiento Clínico Offline</Text>
+          <Text style={styles.footerSubtext}>Motor Inteligente de Sincronización B2B</Text>
         </View>
       </ScrollView>
 
-      {/* Modal de Cola de Sincronización */}
+      {/* Modal de Inspección y Sincronización */}
       <Modal
         visible={isQueueModalVisible}
         animationType="slide"
@@ -221,7 +382,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <View>
                 <Text style={styles.modalTitle}>Cola de Sincronización</Text>
                 <Text style={styles.modalSubtitle}>
-                  {consultations.length} consultas registradas localmente
+                  {consultations.length} expedientes guardados en este dispositivo
                 </Text>
               </View>
               <TouchableOpacity
@@ -234,10 +395,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
             {consultations.length === 0 ? (
               <View style={styles.emptyState}>
-                <CheckCircle size={48} color="#34D399" style={{ marginBottom: 12 }} />
+                <CheckCircle2 size={48} color="#34D399" style={{ marginBottom: 12 }} />
                 <Text style={styles.emptyTitle}>Todo al día</Text>
                 <Text style={styles.emptyText}>
-                  No hay historias clínicas pendientes de sincronizar en este dispositivo.
+                  No hay historias clínicas registradas localmente en este dispositivo.
                 </Text>
               </View>
             ) : (
@@ -245,38 +406,71 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 data={consultations}
                 keyExtractor={(item) => item.localId}
                 contentContainerStyle={{ padding: 16 }}
-                renderItem={({ item }) => (
-                  <View style={styles.queueItemCard}>
-                    <View style={styles.queueItemHeader}>
-                      <Text style={styles.queuePatientName}>{item.patientName}</Text>
-                      <View style={styles.pendingBadge}>
-                        <Clock size={12} color="#FBBF24" style={{ marginRight: 4 }} />
-                        <Text style={styles.pendingBadgeText}>Pendiente</Text>
+                renderItem={({ item }) => {
+                  const isSynced = item.syncStatus === 'SYNCED';
+
+                  return (
+                    <View style={styles.queueItemCard}>
+                      <View style={styles.queueItemHeader}>
+                        <Text style={styles.queuePatientName}>{item.patientName}</Text>
+                        {isSynced ? (
+                          <View style={styles.syncedBadge}>
+                            <CheckCircle2 size={12} color="#34D399" style={{ marginRight: 4 }} />
+                            <Text style={styles.syncedBadgeText}>Sincronizado</Text>
+                          </View>
+                        ) : (
+                          <View style={styles.pendingBadge}>
+                            <Clock size={12} color="#FBBF24" style={{ marginRight: 4 }} />
+                            <Text style={styles.pendingBadgeText}>Pendiente</Text>
+                          </View>
+                        )}
+                      </View>
+
+                      <Text style={styles.queueDiagnosis}>
+                        <Text style={{ fontWeight: '700', color: '#94A3B8' }}>Dx: </Text>
+                        {item.diagnosisDescription}
+                      </Text>
+
+                      <View style={styles.queueMetaRow}>
+                        <Text style={styles.queueMetaText}>
+                          {item.companyName || 'TechCorp Mexico'} •{' '}
+                          {new Date(item.createdAt).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </Text>
+
+                        <View style={styles.itemActionButtons}>
+                          {!isSynced && (
+                            <TouchableOpacity
+                              style={styles.syncSingleButton}
+                              onPress={() => handleSyncSingle(item.localId, item.patientName)}
+                              disabled={syncingItemId === item.localId || isSyncing}
+                              activeOpacity={0.8}
+                            >
+                              {syncingItemId === item.localId ? (
+                                <ActivityIndicator size="small" color="#0F172A" />
+                              ) : (
+                                <>
+                                  <RefreshCw size={11} color="#0F172A" style={{ marginRight: 4 }} />
+                                  <Text style={styles.syncSingleButtonText}>Sincronizar</Text>
+                                </>
+                              )}
+                            </TouchableOpacity>
+                          )}
+
+                          <TouchableOpacity
+                            style={styles.deleteItemButton}
+                            onPress={() => handleDeleteConsultation(item.localId, item.patientName)}
+                            accessibilityLabel="Eliminar registro"
+                          >
+                            <Trash2 size={16} color="#F87171" />
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     </View>
-
-                    <Text style={styles.queueDiagnosis}>
-                      <Text style={{ fontWeight: '700', color: '#94A3B8' }}>Dx: </Text>
-                      {item.diagnosisDescription}
-                    </Text>
-
-                    <View style={styles.queueMetaRow}>
-                      <Text style={styles.queueMetaText}>
-                        {item.companyName || 'TechCorp Mexico'} •{' '}
-                        {new Date(item.createdAt).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.deleteItemButton}
-                        onPress={() => handleDeleteConsultation(item.localId, item.patientName)}
-                      >
-                        <Trash2 size={16} color="#F87171" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
+                  );
+                }}
               />
             )}
           </View>
@@ -305,7 +499,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   headerTopRow: {
     flexDirection: 'row',
@@ -350,7 +544,7 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     marginTop: 2,
   },
-  statusBadge: {
+  statusBadgeOnline: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(52, 211, 153, 0.1)',
@@ -361,10 +555,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(52, 211, 153, 0.2)',
   },
-  statusText: {
+  statusTextOnline: {
     fontSize: 12,
     fontWeight: '600',
     color: '#34D399',
+    marginLeft: 6,
+  },
+  statusBadgeOffline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
+  },
+  statusTextOffline: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FBBF24',
     marginLeft: 6,
   },
   doctorCard: {
@@ -373,7 +584,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E293B',
     padding: 16,
     borderRadius: 20,
-    marginBottom: 28,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: '#334155',
   },
@@ -409,6 +620,47 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#34D399',
     marginLeft: 4,
+  },
+  syncAlertCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.25)',
+  },
+  syncAlertInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  syncAlertTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FBBF24',
+  },
+  syncAlertSubtitle: {
+    fontSize: 12,
+    color: '#94A3B8',
+  },
+  syncNowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FBBF24',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  syncNowButtonDisabled: {
+    opacity: 0.6,
+  },
+  syncNowButtonText: {
+    color: '#0F172A',
+    fontSize: 13,
+    fontWeight: '700',
   },
   sectionTitle: {
     fontSize: 16,
@@ -447,17 +699,26 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     marginTop: 2,
   },
-  countBadge: {
+  countBadgePending: {
     backgroundColor: '#FBBF24',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
     marginRight: 8,
   },
-  countBadgeText: {
+  countBadgeTextPending: {
     color: '#0F172A',
     fontSize: 12,
     fontWeight: '800',
+  },
+  countBadgeSynced: {
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
   },
   footer: {
     marginTop: 32,
@@ -513,6 +774,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  modalSyncBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.25)',
+  },
+  modalSyncTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FBBF24',
+  },
+  modalSyncSubtitle: {
+    fontSize: 12,
+    color: '#94A3B8',
+  },
+  modalSyncButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FBBF24',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
   emptyState: {
     padding: 40,
     alignItems: 'center',
@@ -562,6 +852,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FBBF24',
   },
+  syncedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  syncedBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#34D399',
+  },
   queueDiagnosis: {
     fontSize: 13,
     color: '#E2E8F0',
@@ -578,5 +881,23 @@ const styles = StyleSheet.create({
   },
   deleteItemButton: {
     padding: 6,
+  },
+  itemActionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  syncSingleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FBBF24',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  syncSingleButtonText: {
+    color: '#0F172A',
+    fontSize: 11,
+    fontWeight: '800',
   },
 });

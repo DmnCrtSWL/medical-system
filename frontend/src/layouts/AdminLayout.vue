@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '../stores/auth';
 import { useRouter, RouterLink } from 'vue-router';
-import { Building2, FileText, LogOut, TrendingUp, Stethoscope, DollarSign } from 'lucide-vue-next';
+import { Building2, FileText, LogOut, TrendingUp, Stethoscope, DollarSign, Activity } from 'lucide-vue-next';
 import Button from '../components/ui/Button.vue';
 
 const authStore = useAuthStore();
@@ -30,6 +30,9 @@ const handleLogout = () => {
           <RouterLink to="/" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-navy-800 hover:text-white rounded-xl transition-all font-medium">
             <TrendingUp class="w-5 h-5" /> Panel Principal
           </RouterLink>
+          <RouterLink to="/analytics" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-navy-800 hover:text-white rounded-xl transition-all font-medium">
+            <Activity class="w-5 h-5 text-mint-400" /> Analíticas de Salud B2B
+          </RouterLink>
           <RouterLink to="/companies" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-navy-800 hover:text-white rounded-xl transition-all font-medium">
             <Building2 class="w-5 h-5" /> Empresas B2B
           </RouterLink>
@@ -52,11 +55,15 @@ const handleLogout = () => {
           </div>
           <div class="overflow-hidden">
             <p class="font-semibold text-sm truncate">{{ authStore.user?.name || 'Panel de Control' }}</p>
-            <p class="text-xs text-slate-400 truncate">{{ authStore.user?.role === 'admin' ? 'Staff Administrativo' : 'Operador' }}</p>
+            <p class="text-xs text-mint-400 font-semibold truncate">{{ authStore.user?.role?.toUpperCase() === 'ADMIN' ? 'Administrador General' : 'Staff Administrativo' }}</p>
           </div>
         </div>
-        <Button variant="outline" class="w-full border-navy-700 text-slate-300 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30 transition-all flex items-center gap-2" @click="handleLogout">
-          <LogOut class="w-4 h-4" /> Cerrar Sesión
+        <Button
+          variant="outline"
+          class="w-full bg-white border-slate-200 text-rose-600 hover:text-rose-700 hover:bg-rose-50 font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
+          @click="handleLogout"
+        >
+          <LogOut class="w-4 h-4 text-rose-500" /> Cerrar Sesión
         </Button>
       </div>
     </aside>

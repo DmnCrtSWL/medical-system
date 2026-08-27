@@ -103,9 +103,9 @@ const companies = [
               Generador automatizado de contratos en PDF para nuevas afiliaciones corporativas B2B.
             </p>
             <div class="space-y-4">
-              <div class="p-3 bg-navy-950/50 rounded-lg border border-navy-700 flex items-center justify-between">
-                <span class="text-sm text-slate-300">Plantilla Estandar</span>
-                <span class="text-xs text-mint-400 bg-mint-400/10 px-2 py-1 rounded">V.2.4</span>
+              <div class="p-3 bg-navy-950/50 rounded-xl border border-navy-700 flex items-center justify-between">
+                <span class="text-sm text-slate-300 font-medium">Convenio Legal de Servicios</span>
+                <span class="text-xs text-mint-400 bg-mint-400/10 px-2.5 py-1 rounded-lg font-semibold">PDF Oficial</span>
               </div>
               <Button class="w-full bg-mint-500 hover:bg-mint-600 text-navy-900 font-bold mt-4 shadow-lg shadow-mint-500/30" @click="router.push('/contracts')">
                 Generar Documento

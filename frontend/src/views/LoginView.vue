@@ -26,7 +26,12 @@ const handleLogin = async () => {
   errorMessage.value = '';
 
   try {
-    await authStore.loginUser(email.value, password.value);
+    const loggedUser = await authStore.loginUser(email.value, password.value);
+    if (loggedUser.role?.toUpperCase() !== 'ADMIN') {
+      authStore.logout();
+      errorMessage.value = 'Acceso restringido. Este portal web es exclusivo para Administradores (los médicos deben utilizar la app móvil).';
+      return;
+    }
     router.push('/');
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.data?.message) {

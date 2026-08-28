@@ -10,6 +10,18 @@
     },
     "android": {
       "backgroundColor": "#0F172A"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "0d347f4a-e224-4ef7-af58-188c80ba0803"
+      }
+    },
+    "owner": "yaywiin",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/0d347f4a-e224-4ef7-af58-188c80ba0803"
     }
   }
 }

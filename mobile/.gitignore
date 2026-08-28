@@ -5,3 +5,4 @@ web-build/
 *.backup.*
 package-lock.json
 .DS_Store
+.vercel

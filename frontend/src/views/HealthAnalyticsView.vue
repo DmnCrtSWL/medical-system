@@ -9,12 +9,8 @@ import {
   AlertCircle,
   RotateCw,
   Scale,
-  Heart,
-  Thermometer,
   ShieldCheck,
   FileSpreadsheet,
-  CheckCircle2,
-  HelpCircle,
 } from 'lucide-vue-next';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import Button from '../components/ui/Button.vue';

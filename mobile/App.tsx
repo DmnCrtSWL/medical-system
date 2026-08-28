@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, StatusBar } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  Text,
+  StatusBar,
+  Platform,
+  useWindowDimensions,
+} from 'react-native';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { NewConsultationScreen } from './src/screens/NewConsultationScreen';
@@ -14,6 +22,8 @@ export default function App() {
   const [, setToken] = useState<string | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState<boolean>(true);
   const [currentScreen, setCurrentScreen] = useState<ActiveScreen>('HOME');
+  const { width } = useWindowDimensions();
+  const isLargeScreen = Platform.OS === 'web' && width > 500;
 
   // Restaurar sesión persistida al iniciar la app
   useEffect(() => {
@@ -86,8 +96,9 @@ export default function App() {
     );
   }
 
-  return (
+  const appContent = (
     <View style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
       {!user ? (
         <LoginScreen onLoginSuccess={handleLoginSuccess} />
       ) : currentScreen === 'HOME' ? (
@@ -105,6 +116,21 @@ export default function App() {
       )}
     </View>
   );
+
+  // En navegadores de escritorio (PC/Mac), envolver en un marco de smartphone interactivo
+  if (isLargeScreen) {
+    return (
+      <View style={styles.webDesktopBackground}>
+        <View style={styles.webPhoneFrame}>
+          <View style={styles.webPhoneSpeakerNotch} />
+          <View style={styles.webPhoneScreen}>{appContent}</View>
+        </View>
+        <Text style={styles.webDeviceBadge}>📱 MedSys Mobile • Demostración Interactiva</Text>
+      </View>
+    );
+  }
+
+  return appContent;
 }
 
 const styles = StyleSheet.create({
@@ -123,5 +149,47 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 16,
     fontWeight: '500',
+  },
+  webDesktopBackground: {
+    flex: 1,
+    backgroundColor: '#090D16',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  webPhoneFrame: {
+    width: 390,
+    height: 780,
+    backgroundColor: '#0F172A',
+    borderRadius: 48,
+    borderWidth: 6,
+    borderColor: '#1E293B',
+    overflow: 'hidden',
+    shadowColor: '#34D399',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    elevation: 20,
+  },
+  webPhoneSpeakerNotch: {
+    width: 100,
+    height: 18,
+    backgroundColor: '#1E293B',
+    borderRadius: 10,
+    alignSelf: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+    zIndex: 99,
+  },
+  webPhoneScreen: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  webDeviceBadge: {
+    color: '#64748B',
+    fontSize: 13,
+    marginTop: 14,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });

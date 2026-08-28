@@ -2,7 +2,7 @@
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
-import { Building2, FileText, DollarSign, TrendingUp, Bell, Users } from 'lucide-vue-next';
+import { Building2, FileText, DollarSign, Bell, Users } from 'lucide-vue-next';
 import Button from '../components/ui/Button.vue';
 import { useAuthStore } from '../stores/auth';
 

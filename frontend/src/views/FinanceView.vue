@@ -12,7 +12,6 @@ import {
   Search,
   Calendar,
   X,
-  FileText,
 } from 'lucide-vue-next';
 import {
   useFinanceStore,

@@ -335,3 +335,151 @@ export const getConsultationById = async (req: Request, res: Response): Promise<
     res.status(500).json({ message });
   }
 };
+
+/**
+ * Retorna las métricas y analíticas de salud ocupacional agregadas
+ */
+export const getConsultationAnalytics = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { companyId } = req.query;
+
+    const where: { companyId?: string } = {};
+    if (companyId && typeof companyId === 'string' && companyId !== 'ALL') {
+      where.companyId = companyId;
+    }
+
+    const consultations = await prisma.consultation.findMany({
+      where,
+      orderBy: { consultationDate: 'desc' },
+      select: {
+        id: true,
+        consultationDate: true,
+        diagnosisDescription: true,
+        chiefComplaint: true,
+        bloodPressureSystolic: true,
+        bloodPressureDiastolic: true,
+        heartRate: true,
+        temperature: true,
+        weightKg: true,
+        heightCm: true,
+        bmi: true,
+        patientId: true,
+        doctorId: true,
+        companyId: true,
+        company: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+
+    const totalConsultations = consultations.length;
+    const uniquePatientIds = new Set(consultations.map((c) => c.patientId));
+    const uniqueDoctorIds = new Set(consultations.map((c) => c.doctorId));
+
+    // 1. Top Diagnósticos agrupados
+    const diagnosisCounts: Record<string, number> = {};
+    for (const c of consultations) {
+      const diag = (c.diagnosisDescription || 'Sin diagnóstico especificado').trim();
+      diagnosisCounts[diag] = (diagnosisCounts[diag] || 0) + 1;
+    }
+
+    const topDiagnoses = Object.entries(diagnosisCounts)
+      .map(([name, count]) => ({
+        name,
+        count,
+        percentage: totalConsultations > 0 ? Math.round((count / totalConsultations) * 100) : 0,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    // 2. Categorías de Salud Ocupacional (Clasificación heurística inteligente)
+    const categories: Record<string, number> = {
+      'Musculoesquelético (Ergonomía)': 0,
+      'Respiratorio / Gripas': 0,
+      'Cefaleas y Fatiga Visual': 0,
+      'Gastrointestinal': 0,
+      'Salud General / Preventivo': 0,
+    };
+
+    for (const c of consultations) {
+      const text = `${c.diagnosisDescription || ''} ${c.chiefComplaint || ''}`.toLowerCase();
+      if (/lumbal|espalda|cuello|muscular|trauma|articul|postura|ergonom|hombro|carp|muñec|tunel|túnel|tendin|codo|esguince/i.test(text)) {
+        categories['Musculoesquelético (Ergonomía)'] += 1;
+      } else if (/grip|rinof|tos|faring|respir|pulmon|garganta|gripe/i.test(text)) {
+        categories['Respiratorio / Gripas'] += 1;
+      } else if (/cefalea|cabeza|migraña|estrés|estres|fatiga|ocular|vista/i.test(text)) {
+        categories['Cefaleas y Fatiga Visual'] += 1;
+      } else if (/estómag|estomac|gastr|nausea|vomit|diarrea|colon/i.test(text)) {
+        categories['Gastrointestinal'] += 1;
+      } else {
+        categories['Salud General / Preventivo'] += 1;
+      }
+    }
+
+    const categoryDistribution = Object.entries(categories).map(([category, count]) => ({
+      category,
+      count,
+      percentage: totalConsultations > 0 ? Math.round((count / totalConsultations) * 100) : 0,
+    }));
+
+    // 3. Somatometría & IMC
+    const bmiList = consultations.map((c) => c.bmi).filter((b): b is number => typeof b === 'number' && b > 0);
+    const averageBmi = bmiList.length > 0 ? Math.round((bmiList.reduce((acc, curr) => acc + curr, 0) / bmiList.length) * 10) / 10 : 0;
+
+    const bmiCategories = {
+      underweight: 0,
+      normal: 0,
+      overweight: 0,
+      obese: 0,
+    };
+
+    for (const b of bmiList) {
+      if (b < 18.5) bmiCategories.underweight += 1;
+      else if (b < 25) bmiCategories.normal += 1;
+      else if (b < 30) bmiCategories.overweight += 1;
+      else bmiCategories.obese += 1;
+    }
+
+    // 4. Presión Arterial
+    const systolicList = consultations.map((c) => c.bloodPressureSystolic).filter((s): s is number => typeof s === 'number' && s > 0);
+    const diastolicList = consultations.map((c) => c.bloodPressureDiastolic).filter((d): d is number => typeof d === 'number' && d > 0);
+
+    const averageSystolic = systolicList.length > 0 ? Math.round(systolicList.reduce((a, b) => a + b, 0) / systolicList.length) : 0;
+    const averageDiastolic = diastolicList.length > 0 ? Math.round(diastolicList.reduce((a, b) => a + b, 0) / diastolicList.length) : 0;
+
+    // 5. Historial mensual / distribución temporal
+    const monthlyTrendMap: Record<string, number> = {};
+    for (const c of consultations) {
+      const date = new Date(c.consultationDate);
+      const monthKey = date.toLocaleString('es-MX', { month: 'short', year: 'numeric' });
+      monthlyTrendMap[monthKey] = (monthlyTrendMap[monthKey] || 0) + 1;
+    }
+
+    const monthlyTrend = Object.entries(monthlyTrendMap).map(([period, count]) => ({
+      period,
+      count,
+    }));
+
+    res.status(200).json({
+      totalConsultations,
+      uniquePatients: uniquePatientIds.size,
+      activeDoctors: uniqueDoctorIds.size,
+      topDiagnoses,
+      categoryDistribution,
+      vitals: {
+        averageBmi,
+        bmiCategories,
+        averageBloodPressure: {
+          systolic: averageSystolic,
+          diastolic: averageDiastolic,
+        },
+      },
+      monthlyTrend,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error al generar analíticas';
+    console.error('Error en getConsultationAnalytics:', error);
+    res.status(500).json({ message });
+  }
+};
+

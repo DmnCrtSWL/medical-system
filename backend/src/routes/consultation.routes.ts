@@ -3,6 +3,7 @@ import {
   syncConsultations,
   getConsultations,
   getConsultationById,
+  getConsultationAnalytics,
 } from '../controllers/consultation.controller';
 import { authenticateToken } from '../middlewares/auth.middleware';
 
@@ -12,6 +13,7 @@ const router = Router();
 router.use(authenticateToken);
 
 router.post('/sync', syncConsultations);
+router.get('/analytics', getConsultationAnalytics);
 router.get('/', getConsultations);
 router.get('/:id', getConsultationById);
 

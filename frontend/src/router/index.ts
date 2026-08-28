@@ -40,6 +40,11 @@ const router = createRouter({
           name: 'finance',
           component: () => import('../views/FinanceView.vue'),
         },
+        {
+          path: 'analytics',
+          name: 'analytics',
+          component: () => import('../views/HealthAnalyticsView.vue'),
+        },
       ],
     },
   ],
@@ -48,7 +53,7 @@ const router = createRouter({
 // Guard de Navegacion: Redirigir a /login si intenta acceder a rutas protegidas sin token JWT
 router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token');
-  const protectedRoutes = ['companies', 'doctors', 'contracts', 'finance'];
+  const protectedRoutes = ['companies', 'doctors', 'contracts', 'finance', 'analytics'];
   
   if (protectedRoutes.includes(to.name as string) && !token) {
     next({ name: 'login' });

@@ -5,8 +5,13 @@ import { AuthResponse, DoctorUser, LoginCredentials } from '../types';
 const AUTH_TOKEN_KEY = '@medsys_mobile_token';
 const AUTH_USER_KEY = '@medsys_mobile_user';
 
-// URL del backend: Detecta automáticamente la IP de la máquina de desarrollo para dispositivos físicos
+// URL del backend: Detecta automáticamente entorno cloud, web o IP local para Expo Go
 export const getBaseApiUrl = (): string => {
+  // Prioridad 1: Variable de entorno en Staging o Producción (Vercel Web / EAS Build)
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
   if (Platform.OS === 'web') {
     return 'http://localhost:4000/api';
   }
@@ -20,7 +25,7 @@ export const getBaseApiUrl = (): string => {
     }
   }
 
-  // Fallback a IP local de la red Wi-Fi para dispositivos físicos
+  // Fallback a IP local de la red Wi-Fi para dispositivos físicos en desarrollo local
   return 'http://192.168.100.5:4000/api';
 };
 

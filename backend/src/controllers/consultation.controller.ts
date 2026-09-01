@@ -483,3 +483,198 @@ export const getConsultationAnalytics = async (req: Request, res: Response): Pro
   }
 };
 
+/**
+ * Obtiene la lista de pacientes atendidos por el médico con resumen de última consulta
+ */
+export const getDoctorPatients = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { search, companyId } = req.query;
+
+    let doctorCompanyId: string | null = null;
+
+    if (userId) {
+      const doctor = await prisma.doctor.findUnique({
+        where: { userId },
+      });
+      if (doctor) {
+        doctorCompanyId = doctor.companyId;
+      }
+    }
+
+    const whereClause: Record<string, unknown> = {};
+
+    if (companyId) {
+      whereClause.companyId = String(companyId);
+    } else if (doctorCompanyId) {
+      whereClause.companyId = doctorCompanyId;
+    }
+
+    if (search && typeof search === 'string' && search.trim() !== '') {
+      const term = search.trim();
+      whereClause.OR = [
+        { firstName: { contains: term, mode: 'insensitive' } },
+        { lastName: { contains: term, mode: 'insensitive' } },
+        { employeeNumber: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+
+    const patients = await prisma.patient.findMany({
+      where: whereClause,
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        consultations: {
+          orderBy: {
+            consultationDate: 'desc',
+          },
+          take: 1,
+          select: {
+            id: true,
+            consultationDate: true,
+            diagnosisDescription: true,
+            chiefComplaint: true,
+            status: true,
+          },
+        },
+        _count: {
+          select: {
+            consultations: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+
+    const formattedPatients = patients.map((p) => {
+      const lastConsultation = p.consultations[0] || null;
+      return {
+        id: p.id,
+        name: `${p.firstName} ${p.lastName}`.trim(),
+        firstName: p.firstName,
+        lastName: p.lastName,
+        email: p.email,
+        phone: p.phone,
+        dateOfBirth: p.dateOfBirth,
+        employeeNumber: p.employeeNumber,
+        companyId: p.companyId,
+        companyName: p.company.name,
+        consultationsCount: p._count.consultations,
+        lastConsultationDate: lastConsultation ? lastConsultation.consultationDate : null,
+        lastDiagnosis: lastConsultation ? lastConsultation.diagnosisDescription : 'Sin consultas registradas',
+        lastChiefComplaint: lastConsultation ? lastConsultation.chiefComplaint : null,
+        status: 'ACTIVE',
+      };
+    });
+
+    res.status(200).json(formattedPatients);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error al obtener pacientes';
+    console.error('Error en getDoctorPatients:', error);
+    res.status(500).json({ message });
+  }
+};
+
+/**
+ * Obtiene el expediente clínico completo e historial de visitas de un paciente
+ */
+export const getPatientHistory = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { patientId } = req.params;
+
+    if (!patientId) {
+      res.status(400).json({ message: 'El parámetro patientId es obligatorio.' });
+      return;
+    }
+
+    const patient = await prisma.patient.findFirst({
+      where: {
+        OR: [
+          { id: patientId },
+          { employeeNumber: patientId },
+        ],
+      },
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        consultations: {
+          orderBy: {
+            consultationDate: 'desc',
+          },
+          include: {
+            doctor: {
+              include: {
+                user: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!patient) {
+      res.status(404).json({ message: 'Paciente no encontrado.' });
+      return;
+    }
+
+    const patientInfo = {
+      id: patient.id,
+      name: `${patient.firstName} ${patient.lastName}`.trim(),
+      firstName: patient.firstName,
+      lastName: patient.lastName,
+      email: patient.email,
+      phone: patient.phone,
+      dateOfBirth: patient.dateOfBirth,
+      employeeNumber: patient.employeeNumber,
+      companyId: patient.companyId,
+      companyName: patient.company.name,
+      totalConsultations: patient.consultations.length,
+    };
+
+    const consultationsHistory = patient.consultations.map((c) => ({
+      id: c.id,
+      localId: c.localId,
+      consultationDate: c.consultationDate,
+      chiefComplaint: c.chiefComplaint,
+      symptoms: c.symptoms,
+      diagnosisDescription: c.diagnosisDescription,
+      treatmentPlan: c.treatmentPlan,
+      prescriptionNotes: c.prescriptionNotes,
+      status: c.status,
+      doctorName: c.doctor?.user?.name || 'Dr. Médico General',
+      vitalSigns: {
+        bloodPressureSystolic: c.bloodPressureSystolic,
+        bloodPressureDiastolic: c.bloodPressureDiastolic,
+        heartRate: c.heartRate,
+        temperature: c.temperature,
+        weightKg: c.weightKg,
+        heightCm: c.heightCm,
+        bmi: c.bmi,
+      },
+    }));
+
+    res.status(200).json({
+      patient: patientInfo,
+      consultations: consultationsHistory,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error al obtener historial del paciente';
+    console.error('Error en getPatientHistory:', error);
+    res.status(500).json({ message });
+  }
+};
+

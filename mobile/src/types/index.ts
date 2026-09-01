@@ -89,3 +89,53 @@ export interface SyncQueueItem {
   lastAttemptAt?: string;
   error?: string;
 }
+
+export interface PatientSummary {
+  id: string;
+  name: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string | null;
+  phone?: string | null;
+  dateOfBirth?: string | null;
+  employeeNumber?: string | null;
+  companyId?: string;
+  companyName: string;
+  consultationsCount: number;
+  lastConsultationDate?: string | null;
+  lastDiagnosis?: string | null;
+  lastChiefComplaint?: string | null;
+  status?: string;
+  isOfflineOnly?: boolean;
+}
+
+export interface PatientHistoryItem {
+  id: string;
+  localId?: string | null;
+  consultationDate: string;
+  chiefComplaint: string;
+  symptoms?: string | null;
+  diagnosisDescription: string;
+  treatmentPlan: string;
+  prescriptionNotes?: string | null;
+  status: string;
+  doctorName: string;
+  vitalSigns: VitalSigns;
+}
+
+export interface PatientHistoryResponse {
+  patient: {
+    id: string;
+    name: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string | null;
+    phone?: string | null;
+    dateOfBirth?: string | null;
+    employeeNumber?: string | null;
+    companyId?: string;
+    companyName: string;
+    totalConsultations: number;
+  };
+  consultations: PatientHistoryItem[];
+}

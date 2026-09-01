@@ -6,10 +6,17 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.medsys.mobile",
+      "buildNumber": "1"
     },
     "android": {
-      "backgroundColor": "#0F172A"
+      "package": "com.medsys.mobile",
+      "versionCode": 1,
+      "backgroundColor": "#0F172A",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F172A"
+      }
     },
     "extra": {
       "eas": {

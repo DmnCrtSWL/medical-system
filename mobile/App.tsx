@@ -11,17 +11,28 @@ import {
 import { HomeScreen } from './src/screens/HomeScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { NewConsultationScreen } from './src/screens/NewConsultationScreen';
+import { PatientsListScreen } from './src/screens/PatientsListScreen';
+import { PatientHistoryScreen } from './src/screens/PatientHistoryScreen';
 import { authService } from './src/services/auth';
 import { syncEngine } from './src/services/syncEngine';
-import { DoctorUser } from './src/types';
+import { DoctorUser, PatientSummary } from './src/types';
 
-type ActiveScreen = 'HOME' | 'NEW_CONSULTATION';
+type ActiveScreen = 'HOME' | 'PATIENTS_LIST' | 'PATIENT_HISTORY' | 'NEW_CONSULTATION';
+
+interface PrefilledPatientData {
+  name: string;
+  companyName?: string;
+  employeeNumber?: string;
+  age?: number;
+}
 
 export default function App() {
   const [user, setUser] = useState<DoctorUser | null>(null);
   const [, setToken] = useState<string | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState<boolean>(true);
   const [currentScreen, setCurrentScreen] = useState<ActiveScreen>('HOME');
+  const [selectedPatient, setSelectedPatient] = useState<PatientSummary | null>(null);
+  const [prefilledPatientData, setPrefilledPatientData] = useState<PrefilledPatientData | null>(null);
   const { width } = useWindowDimensions();
   const isLargeScreen = Platform.OS === 'web' && width > 500;
 
@@ -72,17 +83,43 @@ export default function App() {
     await authService.logout();
     setUser(null);
     setToken(null);
+    setSelectedPatient(null);
+    setPrefilledPatientData(null);
     setCurrentScreen('HOME');
   };
 
   const handleConsultationSaved = () => {
-    setCurrentScreen('HOME');
     // Al guardar una consulta, intentar sincronizar de inmediato si hay conexión
     syncEngine.checkServerConnection().then((isOnline) => {
       if (isOnline) {
         syncEngine.syncPendingConsultations().catch(() => {});
       }
     });
+
+    if (selectedPatient) {
+      setCurrentScreen('PATIENT_HISTORY');
+    } else {
+      setCurrentScreen('HOME');
+    }
+  };
+
+  const handleOpenNewConsultation = () => {
+    setPrefilledPatientData(null);
+    setCurrentScreen('NEW_CONSULTATION');
+  };
+
+  const handleOpenPatientsList = () => {
+    setCurrentScreen('PATIENTS_LIST');
+  };
+
+  const handleSelectPatient = (patient: PatientSummary) => {
+    setSelectedPatient(patient);
+    setCurrentScreen('PATIENT_HISTORY');
+  };
+
+  const handleNewConsultationForPatient = (patientInfo: PrefilledPatientData) => {
+    setPrefilledPatientData(patientInfo);
+    setCurrentScreen('NEW_CONSULTATION');
   };
 
   // Pantalla de carga mientras se verifica la sesión en AsyncStorage
@@ -96,24 +133,69 @@ export default function App() {
     );
   }
 
+  const renderActiveScreen = () => {
+    if (!user) {
+      return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+    }
+
+    switch (currentScreen) {
+      case 'HOME':
+        return (
+          <HomeScreen
+            user={user}
+            onLogout={handleLogout}
+            onNavigateToNewConsultation={handleOpenNewConsultation}
+            onNavigateToPatients={handleOpenPatientsList}
+          />
+        );
+      case 'PATIENTS_LIST':
+        return (
+          <PatientsListScreen
+            onBack={() => setCurrentScreen('HOME')}
+            onSelectPatient={handleSelectPatient}
+            onNewConsultation={handleOpenNewConsultation}
+          />
+        );
+      case 'PATIENT_HISTORY':
+        return (
+          <PatientHistoryScreen
+            patientId={selectedPatient?.id || ''}
+            patientName={selectedPatient?.name}
+            onBack={() => setCurrentScreen('PATIENTS_LIST')}
+            onNewConsultationForPatient={handleNewConsultationForPatient}
+          />
+        );
+      case 'NEW_CONSULTATION':
+        return (
+          <NewConsultationScreen
+            user={user}
+            initialPatientData={prefilledPatientData}
+            onBack={() => {
+              if (selectedPatient) {
+                setCurrentScreen('PATIENT_HISTORY');
+              } else {
+                setCurrentScreen('HOME');
+              }
+            }}
+            onSaveSuccess={handleConsultationSaved}
+          />
+        );
+      default:
+        return (
+          <HomeScreen
+            user={user}
+            onLogout={handleLogout}
+            onNavigateToNewConsultation={handleOpenNewConsultation}
+            onNavigateToPatients={handleOpenPatientsList}
+          />
+        );
+    }
+  };
+
   const appContent = (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
-      {!user ? (
-        <LoginScreen onLoginSuccess={handleLoginSuccess} />
-      ) : currentScreen === 'HOME' ? (
-        <HomeScreen
-          user={user}
-          onLogout={handleLogout}
-          onNavigateToNewConsultation={() => setCurrentScreen('NEW_CONSULTATION')}
-        />
-      ) : (
-        <NewConsultationScreen
-          user={user}
-          onBack={() => setCurrentScreen('HOME')}
-          onSaveSuccess={handleConsultationSaved}
-        />
-      )}
+      {renderActiveScreen()}
     </View>
   );
 

@@ -44,24 +44,45 @@ interface AssignedCompany {
 
 interface NewConsultationScreenProps {
   user?: DoctorUser | null;
+  initialPatientData?: {
+    name: string;
+    companyName?: string;
+    employeeNumber?: string;
+    age?: number;
+  } | null;
   onBack: () => void;
   onSaveSuccess: () => void;
 }
 
 export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
   user,
+  initialPatientData,
   onBack,
   onSaveSuccess,
 }) => {
   // Estado del Paciente y Empresa Asignada
-  const [patientName, setPatientName] = useState('');
-  const [patientAge, setPatientAge] = useState('');
-  const [companyName, setCompanyName] = useState<string>('McDonalds');
-  const [employeeNumber, setEmployeeNumber] = useState('');
+  const [patientName, setPatientName] = useState(initialPatientData?.name || '');
+  const [patientAge, setPatientAge] = useState(
+    initialPatientData?.age ? String(initialPatientData.age) : ''
+  );
+  const [companyName, setCompanyName] = useState<string>(
+    initialPatientData?.companyName || 'McDonalds'
+  );
+  const [employeeNumber, setEmployeeNumber] = useState(
+    initialPatientData?.employeeNumber || ''
+  );
   const [isCompanyModalVisible, setIsCompanyModalVisible] = useState<boolean>(false);
 
   // Cargar empresa real asignada en la base de datos al montar la pantalla
   useEffect(() => {
+    if (initialPatientData) {
+      if (initialPatientData.name) setPatientName(initialPatientData.name);
+      if (initialPatientData.companyName) setCompanyName(initialPatientData.companyName);
+      if (initialPatientData.employeeNumber) setEmployeeNumber(initialPatientData.employeeNumber);
+      if (initialPatientData.age) setPatientAge(String(initialPatientData.age));
+      return;
+    }
+
     const fetchCompany = async () => {
       const liveCompany = await authService.getDoctorAssignedCompany();
       if (liveCompany) {
@@ -69,7 +90,7 @@ export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
       }
     };
     fetchCompany();
-  }, []);
+  }, [initialPatientData]);
 
   // Lista de empresas asignadas al doctor logueado
   const assignedCompanies = useMemo(() => {

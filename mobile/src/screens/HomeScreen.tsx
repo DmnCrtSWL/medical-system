@@ -28,6 +28,7 @@ import {
   CheckCircle2,
   Cloud,
   Check,
+  Users,
 } from 'lucide-react-native';
 import { consultationsService } from '../services/consultations';
 import { syncEngine } from '../services/syncEngine';
@@ -38,12 +39,14 @@ interface HomeScreenProps {
   user?: DoctorUser | null;
   onLogout: () => void;
   onNavigateToNewConsultation: () => void;
+  onNavigateToPatients: () => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   user,
   onLogout,
   onNavigateToNewConsultation,
+  onNavigateToPatients,
 }) => {
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [consultations, setConsultations] = useState<ClinicalConsultation[]>([]);
@@ -228,7 +231,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </View>
               <View>
                 <Text style={styles.brandTitle}>MedSys Mobile</Text>
-                <Text style={styles.brandSubtitle}>App de Consultorio para Médicos</Text>
               </View>
             </View>
 
@@ -252,12 +254,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             {isOnline ? (
               <>
                 <Wifi size={14} color="#34D399" />
-                <Text style={styles.statusTextOnline}>Modo En Línea (Listo)</Text>
+                <Text style={styles.statusTextOnline}>Online</Text>
               </>
             ) : (
               <>
                 <WifiOff size={14} color="#FBBF24" />
-                <Text style={styles.statusTextOffline}>Modo Sin Conexión (Offline)</Text>
+                <Text style={styles.statusTextOffline}>Offline</Text>
               </>
             )}
           </TouchableOpacity>
@@ -331,7 +333,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <ChevronRight size={20} color="#64748B" />
         </TouchableOpacity>
 
-        {/* Acción 2: Cola de Sincronización */}
+        {/* Acción 2: Historial de Pacientes */}
+        <TouchableOpacity
+          style={styles.actionCard}
+          onPress={onNavigateToPatients}
+          activeOpacity={0.8}
+        >
+          <View style={[styles.actionIconContainer, { backgroundColor: 'rgba(52, 211, 153, 0.15)' }]}>
+            <Users size={24} color="#34D399" />
+          </View>
+          <View style={styles.actionTextContainer}>
+            <Text style={styles.actionTitle}>Historial de Pacientes</Text>
+            <Text style={styles.actionDescription}>Consulta expedientes clínicos e historial de visitas</Text>
+          </View>
+          <ChevronRight size={20} color="#64748B" />
+        </TouchableOpacity>
+
+        {/* Acción 3: Cola de Sincronización */}
         <TouchableOpacity
           style={styles.actionCard}
           onPress={openQueueModal}

@@ -28,11 +28,14 @@ import {
   CheckCircle2,
   Cloud,
   Check,
+  Sun,
+  Moon,
 } from 'lucide-react-native';
 import { consultationsService } from '../services/consultations';
 import { syncEngine } from '../services/syncEngine';
 import { authService } from '../services/auth';
 import { ClinicalConsultation, DoctorUser } from '../types';
+import { useTheme } from '../context/ThemeContext';
 
 interface HomeScreenProps {
   user?: DoctorUser | null;
@@ -53,6 +56,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [syncingItemId, setSyncingItemId] = useState<string | null>(null);
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
   const [doctorCompany, setDoctorCompany] = useState<string | null>(null);
+  const { isDark, colors, toggleTheme } = useTheme();
 
   const loadConsultationsData = useCallback(async () => {
     try {
@@ -215,134 +219,214 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.headerBackground}
+      />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Top Header */}
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
             <View style={styles.logoRow}>
-              <View style={styles.logoBadge}>
-                <Stethoscope size={28} color="#34D399" />
+              <View
+                style={[
+                  styles.logoBadge,
+                  {
+                    backgroundColor: colors.primaryLight,
+                    borderColor: colors.primaryBorder,
+                  },
+                ]}
+              >
+                <Stethoscope size={28} color={colors.primary} />
               </View>
               <View>
-                <Text style={styles.brandTitle}>MedSys Mobile</Text>
-                <Text style={styles.brandSubtitle}>App de Consultorio para Médicos</Text>
+                <Text style={[styles.brandTitle, { color: colors.textPrimary }]}>MedSys Mobile</Text>
+                <Text style={[styles.brandSubtitle, { color: colors.textSecondary }]}>
+                  App de Consultorio para Médicos
+                </Text>
               </View>
             </View>
 
-            {/* Logout Button */}
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={handleLogoutPress}
-              activeOpacity={0.7}
-              accessibilityLabel="Cerrar sesión"
-            >
-              <LogOut size={20} color="#F87171" />
-            </TouchableOpacity>
+            {/* Actions: Theme Switcher & Logout */}
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={[
+                  styles.headerIconButton,
+                  {
+                    backgroundColor: colors.surfaceSecondary,
+                    borderColor: colors.border,
+                  },
+                ]}
+                onPress={toggleTheme}
+                activeOpacity={0.7}
+                accessibilityLabel="Cambiar tema"
+              >
+                {isDark ? (
+                  <Sun size={18} color="#FBBF24" />
+                ) : (
+                  <Moon size={18} color={colors.primary} />
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.headerIconButton,
+                  {
+                    backgroundColor: colors.dangerBg,
+                    borderColor: colors.dangerBorder,
+                  },
+                ]}
+                onPress={handleLogoutPress}
+                activeOpacity={0.7}
+                accessibilityLabel="Cerrar sesión"
+              >
+                <LogOut size={18} color={colors.dangerText} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Dynamic Connection Badge */}
           <TouchableOpacity
-            style={isOnline ? styles.statusBadgeOnline : styles.statusBadgeOffline}
+            style={[
+              styles.statusBadge,
+              isOnline
+                ? {
+                    backgroundColor: colors.statusOnlineBg,
+                    borderColor: colors.statusOnlineBorder,
+                  }
+                : {
+                    backgroundColor: colors.statusOfflineBg,
+                    borderColor: colors.statusOfflineBorder,
+                  },
+            ]}
             onPress={checkConnectivity}
             activeOpacity={0.7}
           >
             {isOnline ? (
               <>
-                <Wifi size={14} color="#34D399" />
-                <Text style={styles.statusTextOnline}>Modo En Línea (Listo)</Text>
+                <Wifi size={14} color={colors.statusOnlineText} style={{ marginRight: 6 }} />
+                <Text style={[styles.statusText, { color: colors.statusOnlineText }]}>
+                  Modo En Línea (Listo)
+                </Text>
               </>
             ) : (
               <>
-                <WifiOff size={14} color="#FBBF24" />
-                <Text style={styles.statusTextOffline}>Modo Sin Conexión (Offline)</Text>
+                <WifiOff size={14} color={colors.statusOfflineText} style={{ marginRight: 6 }} />
+                <Text style={[styles.statusText, { color: colors.statusOfflineText }]}>
+                  Modo Local / Offline Activo
+                </Text>
               </>
             )}
           </TouchableOpacity>
         </View>
 
-        {/* Doctor Card Profile */}
-        <View style={styles.doctorCard}>
-          <View style={styles.doctorAvatar}>
-            <UserCheck size={26} color="#FFFFFF" />
+        {/* Doctor Info Card */}
+        <View
+          style={[
+            styles.doctorCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.cardBorder,
+              shadowColor: colors.shadowColor,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.avatarContainer,
+              {
+                backgroundColor: colors.infoBg,
+                borderColor: colors.infoBorder,
+              },
+            ]}
+          >
+            <UserCheck size={28} color={colors.infoText} />
           </View>
           <View style={styles.doctorInfo}>
-            <Text style={styles.doctorName}>{user?.name || 'Dr. Carlos Mendoza'}</Text>
-            <Text style={styles.doctorEmail}>
-              {user?.email || 'carlos.mendoza@medical.com'}
+            <Text style={[styles.doctorName, { color: colors.textPrimary }]}>
+              {user?.name || 'Dr. Médico In-House'}
             </Text>
-            <View style={styles.companyChip}>
-              <Building2 size={12} color="#34D399" />
-              <Text style={styles.companyText}>
-                {doctorCompany ? `Médico In-House en ${doctorCompany}` : 'Médico Certificado In-House'}
+            <Text style={[styles.doctorEmail, { color: colors.textSecondary }]}>
+              {user?.email || 'medico@medical.com'}
+            </Text>
+            <View style={styles.doctorBadgeRow}>
+              <Building2 size={13} color={colors.primary} style={{ marginRight: 4 }} />
+              <Text style={[styles.doctorBadgeText, { color: colors.primary }]}>
+                {doctorCompany ? `Médico In-House en ${doctorCompany}` : 'Médico General de Planta'}
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Banner de Sincronización Rápida si hay pendientes */}
-        {pendingCount > 0 && (
-          <View style={styles.syncAlertCard}>
-            <View style={styles.syncAlertInfo}>
-              <Cloud size={20} color="#FBBF24" style={{ marginRight: 10 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.syncAlertTitle}>
-                  {pendingCount === 1 ? '1 expediente listo' : `${pendingCount} expedientes listos`}
-                </Text>
-                <Text style={styles.syncAlertSubtitle}>Pendientes de subir a la nube B2B</Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              style={[styles.syncNowButton, isSyncing && styles.syncNowButtonDisabled]}
-              onPress={handleSyncNow}
-              disabled={isSyncing}
-              activeOpacity={0.8}
-            >
-              {isSyncing ? (
-                <ActivityIndicator size="small" color="#0F172A" />
-              ) : (
-                <>
-                  <RefreshCw size={14} color="#0F172A" style={{ marginRight: 6 }} />
-                  <Text style={styles.syncNowButtonText}>Subir Ahora</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* Section Title */}
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Acciones Rápidas</Text>
 
-        {/* Acciones Rápidas */}
-        <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
-
-        {/* Acción 1: Nueva Historia Clínica */}
+        {/* Acción 1: Nueva Consulta */}
         <TouchableOpacity
-          style={styles.actionCard}
+          style={[
+            styles.actionCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.cardBorder,
+              shadowColor: colors.shadowColor,
+            },
+          ]}
           onPress={onNavigateToNewConsultation}
           activeOpacity={0.8}
         >
-          <View style={[styles.actionIconContainer, { backgroundColor: 'rgba(52, 211, 153, 0.15)' }]}>
-            <FileSpreadsheet size={24} color="#34D399" />
+          <View
+            style={[
+              styles.actionIconContainer,
+              {
+                backgroundColor: colors.primaryLight,
+                borderColor: colors.primaryBorder,
+              },
+            ]}
+          >
+            <FileSpreadsheet size={24} color={colors.primary} />
           </View>
           <View style={styles.actionTextContainer}>
-            <Text style={styles.actionTitle}>Nueva Historia Clínica</Text>
-            <Text style={styles.actionDescription}>Captura datos de consulta en modo local/offline</Text>
+            <Text style={[styles.actionTitle, { color: colors.textPrimary }]}>
+              Nueva Historia Clínica
+            </Text>
+            <Text style={[styles.actionDescription, { color: colors.textSecondary }]}>
+              Captura datos de consulta en modo local/offline
+            </Text>
           </View>
-          <ChevronRight size={20} color="#64748B" />
+          <ChevronRight size={20} color={colors.textMuted} />
         </TouchableOpacity>
 
         {/* Acción 2: Cola de Sincronización */}
         <TouchableOpacity
-          style={styles.actionCard}
+          style={[
+            styles.actionCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.cardBorder,
+              shadowColor: colors.shadowColor,
+            },
+          ]}
           onPress={openQueueModal}
           activeOpacity={0.8}
         >
-          <View style={[styles.actionIconContainer, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
-            <RefreshCw size={24} color="#60A5FA" />
+          <View
+            style={[
+              styles.actionIconContainer,
+              {
+                backgroundColor: colors.infoBg,
+                borderColor: colors.infoBorder,
+              },
+            ]}
+          >
+            <RefreshCw size={24} color={colors.infoText} />
           </View>
           <View style={styles.actionTextContainer}>
-            <Text style={styles.actionTitle}>Cola de Sincronización</Text>
-            <Text style={styles.actionDescription}>
+            <Text style={[styles.actionTitle, { color: colors.textPrimary }]}>
+              Cola de Sincronización
+            </Text>
+            <Text style={[styles.actionDescription, { color: colors.textSecondary }]}>
               {pendingCount === 0
                 ? 'Todos los expedientes sincronizados'
                 : pendingCount === 1
@@ -351,21 +435,43 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </Text>
           </View>
           {pendingCount > 0 ? (
-            <View style={styles.countBadgePending}>
-              <Text style={styles.countBadgeTextPending}>{pendingCount}</Text>
+            <View
+              style={[
+                styles.countBadgePending,
+                {
+                  backgroundColor: colors.warningBg,
+                  borderColor: colors.warningBorder,
+                },
+              ]}
+            >
+              <Text style={[styles.countBadgeTextPending, { color: colors.warningText }]}>
+                {pendingCount}
+              </Text>
             </View>
           ) : (
-            <View style={styles.countBadgeSynced}>
-              <Check size={12} color="#34D399" />
+            <View
+              style={[
+                styles.countBadgeSynced,
+                {
+                  backgroundColor: colors.statusOnlineBg,
+                  borderColor: colors.statusOnlineBorder,
+                },
+              ]}
+            >
+              <Check size={12} color={colors.statusOnlineText} />
             </View>
           )}
-          <ChevronRight size={20} color="#64748B" />
+          <ChevronRight size={20} color={colors.textMuted} />
         </TouchableOpacity>
 
         {/* Footer Info */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>MedSys Native Engine v1.0.0</Text>
-          <Text style={styles.footerSubtext}>Motor Inteligente de Sincronización B2B</Text>
+          <Text style={[styles.footerText, { color: colors.textMuted }]}>
+            MedSys Native Engine v1.0.0
+          </Text>
+          <Text style={[styles.footerSubtext, { color: colors.textMuted }]}>
+            Motor Inteligente de Sincronización B2B
+          </Text>
         </View>
       </ScrollView>
 
@@ -376,28 +482,99 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         transparent
         onRequestClose={() => setIsQueueModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}>
+          <View
+            style={[
+              styles.modalContainer,
+              {
+                backgroundColor: colors.modalContainer,
+                borderColor: colors.modalBorder,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.modalHeader,
+                {
+                  borderBottomColor: colors.border,
+                },
+              ]}
+            >
               <View>
-                <Text style={styles.modalTitle}>Cola de Sincronización</Text>
-                <Text style={styles.modalSubtitle}>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
+                  Cola de Sincronización
+                </Text>
+                <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
                   {consultations.length} expedientes guardados en este dispositivo
                 </Text>
               </View>
               <TouchableOpacity
-                style={styles.closeButton}
+                style={[styles.closeButton, { backgroundColor: colors.surfaceSecondary }]}
                 onPress={() => setIsQueueModalVisible(false)}
               >
-                <X size={20} color="#94A3B8" />
+                <X size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
+            {/* Banner de Acción si hay pendientes */}
+            {pendingCount > 0 && (
+              <View
+                style={[
+                  styles.modalSyncBanner,
+                  {
+                    backgroundColor: colors.warningBg,
+                    borderColor: colors.warningBorder,
+                  },
+                ]}
+              >
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <Text style={[styles.modalSyncTitle, { color: colors.warningText }]}>
+                    {pendingCount} por subir al servidor
+                  </Text>
+                  <Text style={[styles.modalSyncSubtitle, { color: colors.textSecondary }]}>
+                    Sincroniza para reflejarlos en el Admin
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.modalSyncButton, { backgroundColor: colors.warningText }]}
+                  onPress={handleSyncNow}
+                  disabled={isSyncing}
+                  activeOpacity={0.8}
+                >
+                  {isSyncing ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Cloud size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                      <Text style={styles.modalSyncButtonText}>Subir Todo</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {syncFeedback && (
+              <View
+                style={[
+                  styles.feedbackBanner,
+                  {
+                    backgroundColor: colors.statusOnlineBg,
+                    borderColor: colors.statusOnlineBorder,
+                  },
+                ]}
+              >
+                <CheckCircle2 size={16} color={colors.statusOnlineText} style={{ marginRight: 6 }} />
+                <Text style={[styles.feedbackText, { color: colors.statusOnlineText }]}>
+                  {syncFeedback}
+                </Text>
+              </View>
+            )}
+
             {consultations.length === 0 ? (
               <View style={styles.emptyState}>
-                <CheckCircle2 size={48} color="#34D399" style={{ marginBottom: 12 }} />
-                <Text style={styles.emptyTitle}>Todo al día</Text>
-                <Text style={styles.emptyText}>
+                <CheckCircle2 size={48} color={colors.primary} style={{ marginBottom: 12 }} />
+                <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Todo al día</Text>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                   No hay historias clínicas registradas localmente en este dispositivo.
                 </Text>
               </View>
@@ -410,30 +587,72 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   const isSynced = item.syncStatus === 'SYNCED';
 
                   return (
-                    <View style={styles.queueItemCard}>
+                    <View
+                      style={[
+                        styles.queueItemCard,
+                        {
+                          backgroundColor: colors.surfaceSecondary,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
                       <View style={styles.queueItemHeader}>
-                        <Text style={styles.queuePatientName}>{item.patientName}</Text>
+                        <Text style={[styles.queuePatientName, { color: colors.textPrimary }]}>
+                          {item.patientName}
+                        </Text>
                         {isSynced ? (
-                          <View style={styles.syncedBadge}>
-                            <CheckCircle2 size={12} color="#34D399" style={{ marginRight: 4 }} />
-                            <Text style={styles.syncedBadgeText}>Sincronizado</Text>
+                          <View
+                            style={[
+                              styles.syncedBadge,
+                              {
+                                backgroundColor: colors.statusOnlineBg,
+                              },
+                            ]}
+                          >
+                            <CheckCircle2
+                              size={12}
+                              color={colors.statusOnlineText}
+                              style={{ marginRight: 4 }}
+                            />
+                            <Text
+                              style={[
+                                styles.syncedBadgeText,
+                                { color: colors.statusOnlineText },
+                              ]}
+                            >
+                              Sincronizado
+                            </Text>
                           </View>
                         ) : (
-                          <View style={styles.pendingBadge}>
-                            <Clock size={12} color="#FBBF24" style={{ marginRight: 4 }} />
-                            <Text style={styles.pendingBadgeText}>Pendiente</Text>
+                          <View
+                            style={[
+                              styles.pendingBadge,
+                              {
+                                backgroundColor: colors.warningBg,
+                              },
+                            ]}
+                          >
+                            <Clock size={12} color={colors.warningText} style={{ marginRight: 4 }} />
+                            <Text
+                              style={[
+                                styles.pendingBadgeText,
+                                { color: colors.warningText },
+                              ]}
+                            >
+                              Pendiente
+                            </Text>
                           </View>
                         )}
                       </View>
 
-                      <Text style={styles.queueDiagnosis}>
-                        <Text style={{ fontWeight: '700', color: '#94A3B8' }}>Dx: </Text>
+                      <Text style={[styles.queueDiagnosis, { color: colors.textSecondary }]}>
+                        <Text style={{ fontWeight: '700', color: colors.textMuted }}>Dx: </Text>
                         {item.diagnosisDescription}
                       </Text>
 
                       <View style={styles.queueMetaRow}>
-                        <Text style={styles.queueMetaText}>
-                          {item.companyName || 'TechCorp Mexico'} •{' '}
+                        <Text style={[styles.queueMetaText, { color: colors.textMuted }]}>
+                          {item.companyName || 'Empresa Asignada'} •{' '}
                           {new Date(item.createdAt).toLocaleTimeString([], {
                             hour: '2-digit',
                             minute: '2-digit',
@@ -443,28 +662,53 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                         <View style={styles.itemActionButtons}>
                           {!isSynced && (
                             <TouchableOpacity
-                              style={styles.syncSingleButton}
+                              style={[
+                                styles.syncSingleButton,
+                                {
+                                  backgroundColor: colors.warningBg,
+                                  borderColor: colors.warningBorder,
+                                },
+                              ]}
                               onPress={() => handleSyncSingle(item.localId, item.patientName)}
                               disabled={syncingItemId === item.localId || isSyncing}
                               activeOpacity={0.8}
                             >
                               {syncingItemId === item.localId ? (
-                                <ActivityIndicator size="small" color="#0F172A" />
+                                <ActivityIndicator size="small" color={colors.warningText} />
                               ) : (
                                 <>
-                                  <RefreshCw size={11} color="#0F172A" style={{ marginRight: 4 }} />
-                                  <Text style={styles.syncSingleButtonText}>Sincronizar</Text>
+                                  <Cloud
+                                    size={13}
+                                    color={colors.warningText}
+                                    style={{ marginRight: 4 }}
+                                  />
+                                  <Text
+                                    style={[
+                                      styles.syncSingleButtonText,
+                                      { color: colors.warningText },
+                                    ]}
+                                  >
+                                    Subir
+                                  </Text>
                                 </>
                               )}
                             </TouchableOpacity>
                           )}
 
                           <TouchableOpacity
-                            style={styles.deleteItemButton}
-                            onPress={() => handleDeleteConsultation(item.localId, item.patientName)}
-                            accessibilityLabel="Eliminar registro"
+                            style={[
+                              styles.deleteItemButton,
+                              {
+                                backgroundColor: colors.dangerBg,
+                                borderColor: colors.dangerBorder,
+                              },
+                            ]}
+                            onPress={() =>
+                              handleDeleteConsultation(item.localId, item.patientName)
+                            }
+                            activeOpacity={0.7}
                           >
-                            <Trash2 size={16} color="#F87171" />
+                            <Trash2 size={14} color={colors.dangerText} />
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -483,18 +727,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
-    width: '100%',
   },
   scrollView: {
     flex: 1,
-    width: '100%',
   },
   scrollContent: {
     padding: 20,
-    paddingTop: Platform.OS === 'ios' ? 64 : 24,
+    paddingTop: Platform.OS === 'ios' ? 50 : 24,
     paddingBottom: 40,
-    maxWidth: 600,
+    maxWidth: 480,
     width: '100%',
     alignSelf: 'center',
   },
@@ -503,8 +744,8 @@ const styles = StyleSheet.create({
   },
   headerTopRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 12,
   },
   logoRow: {
@@ -512,179 +753,117 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  logoutButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.25)',
-  },
   logoBadge: {
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: 12,
     borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.3)',
   },
   brandTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   brandSubtitle: {
-    fontSize: 13,
-    color: '#94A3B8',
-    marginTop: 2,
+    fontSize: 12,
+    marginTop: 1,
   },
-  statusBadgeOnline: {
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(52, 211, 153, 0.1)',
+  },
+  headerIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+    borderWidth: 1,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.2)',
   },
-  statusTextOnline: {
+  statusText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#34D399',
-    marginLeft: 6,
-  },
-  statusBadgeOffline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(251, 191, 36, 0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.3)',
-  },
-  statusTextOffline: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FBBF24',
-    marginLeft: 6,
+    fontWeight: '700',
   },
   doctorCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
-    padding: 16,
     borderRadius: 20,
-    marginBottom: 20,
+    padding: 16,
+    marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#334155',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  doctorAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#3B82F6',
+  avatarContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
+    borderWidth: 1,
   },
   doctorInfo: {
     flex: 1,
   },
   doctorName: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: '800',
+    marginBottom: 2,
   },
   doctorEmail: {
-    fontSize: 12,
-    color: '#94A3B8',
-    marginTop: 2,
-  },
-  companyChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  companyText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#34D399',
-    marginLeft: 4,
-  },
-  syncAlertCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(251, 191, 36, 0.08)',
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.25)',
-  },
-  syncAlertInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  syncAlertTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FBBF24',
-  },
-  syncAlertSubtitle: {
-    fontSize: 12,
-    color: '#94A3B8',
-  },
-  syncNowButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FBBF24',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  syncNowButtonDisabled: {
-    opacity: 0.6,
-  },
-  syncNowButtonText: {
-    color: '#0F172A',
     fontSize: 13,
-    fontWeight: '700',
+    marginBottom: 6,
+  },
+  doctorBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  doctorBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#F8FAFC',
+    fontWeight: '800',
     marginBottom: 14,
+    letterSpacing: -0.2,
   },
   actionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
-    padding: 16,
     borderRadius: 20,
+    padding: 16,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#334155',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
   actionIconContainer: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
+    borderWidth: 1,
   },
   actionTextContainer: {
     flex: 1,
@@ -692,33 +871,31 @@ const styles = StyleSheet.create({
   actionTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
+    marginBottom: 3,
   },
   actionDescription: {
     fontSize: 12,
-    color: '#94A3B8',
-    marginTop: 2,
+    lineHeight: 16,
   },
   countBadgePending: {
-    backgroundColor: '#FBBF24',
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
     marginRight: 8,
+    borderWidth: 1,
   },
   countBadgeTextPending: {
-    color: '#0F172A',
     fontSize: 12,
     fontWeight: '800',
   },
   countBadgeSynced: {
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
+    borderWidth: 1,
   },
   footer: {
     marginTop: 32,
@@ -727,21 +904,17 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748B',
   },
   footerSubtext: {
     fontSize: 11,
-    color: '#475569',
     marginTop: 2,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
     alignItems: 'center',
   },
   modalContainer: {
-    backgroundColor: '#1E293B',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: '80%',
@@ -749,7 +922,6 @@ const styles = StyleSheet.create({
     maxWidth: 420,
     paddingBottom: 40,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -757,23 +929,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#334155',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#FFFFFF',
   },
   modalSubtitle: {
     fontSize: 12,
-    color: '#94A3B8',
     marginTop: 2,
   },
   closeButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#334155',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -781,30 +949,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(251, 191, 36, 0.1)',
     marginHorizontal: 16,
     marginTop: 16,
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.25)',
   },
   modalSyncTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#FBBF24',
   },
   modalSyncSubtitle: {
     fontSize: 12,
-    color: '#94A3B8',
   },
   modalSyncButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FBBF24',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 12,
+  },
+  modalSyncButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  feedbackBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  feedbackText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   emptyState: {
     padding: 40,
@@ -814,22 +995,18 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
     marginBottom: 6,
   },
   emptyText: {
     fontSize: 13,
-    color: '#94A3B8',
     textAlign: 'center',
     lineHeight: 18,
   },
   queueItemCard: {
-    backgroundColor: '#0F172A',
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   queueItemHeader: {
     flexDirection: 'row',
@@ -840,12 +1017,10 @@ const styles = StyleSheet.create({
   queuePatientName: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
   pendingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(251, 191, 36, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -853,12 +1028,10 @@ const styles = StyleSheet.create({
   pendingBadgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#FBBF24',
   },
   syncedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -866,41 +1039,42 @@ const styles = StyleSheet.create({
   syncedBadgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#34D399',
   },
   queueDiagnosis: {
     fontSize: 13,
-    color: '#E2E8F0',
     marginBottom: 8,
   },
   queueMetaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(150, 150, 150, 0.1)',
   },
   queueMetaText: {
     fontSize: 11,
-    color: '#64748B',
-  },
-  deleteItemButton: {
-    padding: 6,
   },
   itemActionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
   syncSingleButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FBBF24',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
+    marginRight: 8,
+    borderWidth: 1,
   },
   syncSingleButtonText: {
-    color: '#0F172A',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
+  },
+  deleteItemButton: {
+    padding: 6,
+    borderRadius: 8,
+    borderWidth: 1,
   },
 });

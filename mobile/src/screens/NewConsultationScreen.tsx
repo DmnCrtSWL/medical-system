@@ -31,37 +31,57 @@ import {
   ChevronDown,
   Check,
   X,
+  Sun,
+  Moon,
 } from 'lucide-react-native';
 import { consultationsService } from '../services/consultations';
 import { authService } from '../services/auth';
 import { ClinicalConsultationInput, DoctorUser } from '../types';
-
-interface AssignedCompany {
-  id: string;
-  name: string;
-  subtitle: string;
-}
+import { useTheme } from '../context/ThemeContext';
 
 interface NewConsultationScreenProps {
   user?: DoctorUser | null;
+  initialPatientData?: {
+    name: string;
+    companyName?: string;
+    employeeNumber?: string;
+    age?: number;
+  } | null;
   onBack: () => void;
   onSaveSuccess: () => void;
 }
 
 export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
   user,
+  initialPatientData,
   onBack,
   onSaveSuccess,
 }) => {
+  const { isDark, colors, toggleTheme } = useTheme();
+
   // Estado del Paciente y Empresa Asignada
-  const [patientName, setPatientName] = useState('');
-  const [patientAge, setPatientAge] = useState('');
-  const [companyName, setCompanyName] = useState<string>('McDonalds');
-  const [employeeNumber, setEmployeeNumber] = useState('');
+  const [patientName, setPatientName] = useState(initialPatientData?.name || '');
+  const [patientAge, setPatientAge] = useState(
+    initialPatientData?.age ? String(initialPatientData.age) : ''
+  );
+  const [companyName, setCompanyName] = useState<string>(
+    initialPatientData?.companyName || 'McDonalds'
+  );
+  const [employeeNumber, setEmployeeNumber] = useState(
+    initialPatientData?.employeeNumber || ''
+  );
   const [isCompanyModalVisible, setIsCompanyModalVisible] = useState<boolean>(false);
 
   // Cargar empresa real asignada en la base de datos al montar la pantalla
   useEffect(() => {
+    if (initialPatientData) {
+      if (initialPatientData.name) setPatientName(initialPatientData.name);
+      if (initialPatientData.companyName) setCompanyName(initialPatientData.companyName);
+      if (initialPatientData.employeeNumber) setEmployeeNumber(initialPatientData.employeeNumber);
+      if (initialPatientData.age) setPatientAge(String(initialPatientData.age));
+      return;
+    }
+
     const fetchCompany = async () => {
       const liveCompany = await authService.getDoctorAssignedCompany();
       if (liveCompany) {
@@ -69,7 +89,7 @@ export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
       }
     };
     fetchCompany();
-  }, []);
+  }, [initialPatientData]);
 
   // Lista de empresas asignadas al doctor logueado
   const assignedCompanies = useMemo(() => {
@@ -99,7 +119,7 @@ export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
 
   const [isSaving, setIsSaving] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [savedSuccess, setSavedSuccess] = useState(false);
+  const [, setSavedSuccess] = useState(false);
 
   // Cálculo de IMC automático en tiempo real
   const calculatedBmi = useMemo(() => {
@@ -114,17 +134,17 @@ export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
     const bmiValue = weight / (heightInMeters * heightInMeters);
 
     let category = 'Normal';
-    let color = '#34D399'; // Verde
+    let color = colors.primary;
 
     if (bmiValue < 18.5) {
       category = 'Bajo peso';
-      color = '#60A5FA'; // Azul
+      color = colors.infoText;
     } else if (bmiValue >= 25 && bmiValue < 30) {
       category = 'Sobrepeso';
-      color = '#FBBF24'; // Amarillo
+      color = colors.warningText;
     } else if (bmiValue >= 30) {
       category = 'Obesidad';
-      color = '#F87171'; // Rojo
+      color = colors.dangerText;
     }
 
     return {
@@ -132,7 +152,7 @@ export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
       category,
       color,
     };
-  }, [weightKg, heightCm]);
+  }, [weightKg, heightCm, colors]);
 
   const handleSave = async () => {
     setValidationError(null);
@@ -205,397 +225,725 @@ export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={[styles.container, { backgroundColor: colors.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
-
-      {/* Header Superior */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={onBack}
-          activeOpacity={0.7}
-          accessibilityLabel="Volver al inicio"
-        >
-          <ArrowLeft size={22} color="#FFFFFF" />
-        </TouchableOpacity>
-        <View style={styles.headerTitles}>
-          <Text style={styles.headerTitle}>Nueva Historia Clínica</Text>
-          <Text style={styles.headerSubtitle}>Captura de Consulta Offline</Text>
-        </View>
-        <View style={styles.offlineBadge}>
-          <Text style={styles.offlineBadgeText}>Modo Local</Text>
-        </View>
-      </View>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.headerBackground}
+      />
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Banner de Validación / Éxito */}
+        {/* Header con botón de regreso */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={[
+              styles.backButton,
+              {
+                backgroundColor: colors.surfaceSecondary,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={onBack}
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={20} color={colors.textPrimary} />
+          </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+              Nueva Historia Clínica
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+              {user?.name || 'Dr. Médico'} • Captura de Consulta
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.themeButton,
+              {
+                backgroundColor: colors.surfaceSecondary,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={toggleTheme}
+            activeOpacity={0.7}
+          >
+            {isDark ? <Sun size={18} color="#FBBF24" /> : <Moon size={18} color={colors.primary} />}
+          </TouchableOpacity>
+        </View>
+
+        {/* Error de validación */}
         {validationError && (
-          <View style={styles.errorBanner}>
-            <AlertCircle size={18} color="#F87171" style={styles.bannerIcon} />
-            <Text style={styles.errorText}>{validationError}</Text>
+          <View
+            style={[
+              styles.errorBanner,
+              {
+                backgroundColor: colors.dangerBg,
+                borderColor: colors.dangerBorder,
+              },
+            ]}
+          >
+            <AlertCircle size={18} color={colors.dangerText} style={{ marginRight: 8 }} />
+            <Text style={[styles.errorText, { color: colors.dangerText }]}>{validationError}</Text>
           </View>
         )}
 
-        {savedSuccess && (
-          <View style={styles.successBanner}>
-            <CheckCircle2 size={18} color="#34D399" style={styles.bannerIcon} />
-            <Text style={styles.successText}>
-              Consulta guardada exitosamente en el almacenamiento local.
-            </Text>
-          </View>
-        )}
-
-        {/* SECCIÓN 1: DATOS DEL PACIENTE */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconBadge}>
-              <User size={18} color="#34D399" />
-            </View>
-            <Text style={styles.sectionTitle}>1. Datos del Paciente</Text>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>
-              Nombre Completo del Trabajador <Text style={styles.required}>*</Text>
-            </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ej. Juan Pérez López"
-              placeholderTextColor="#64748B"
-              value={patientName}
-              onChangeText={setPatientName}
-            />
-          </View>
-
-          <View style={styles.rowInputs}>
-            <View style={[styles.inputGroup, styles.flex1, { marginRight: 8 }]}>
-              <Text style={styles.label}>Edad</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="32"
-                placeholderTextColor="#64748B"
-                value={patientAge}
-                onChangeText={setPatientAge}
-                keyboardType="numeric"
-              />
-            </View>
-
-            <View style={[styles.inputGroup, styles.flex1, { marginLeft: 8 }]}>
-              <Text style={styles.label}>N° Ficha / Empleado</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="EMP-1049"
-                placeholderTextColor="#64748B"
-                value={employeeNumber}
-                onChangeText={setEmployeeNumber}
-              />
-            </View>
-          </View>
-
-          {/* Selector Táctil de Empresa Asignada */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Empresa / Planta Asignada</Text>
-            <TouchableOpacity
-              style={styles.companySelectorCard}
-              onPress={() => {
-                if (assignedCompanies.length > 1) {
-                  setIsCompanyModalVisible(true);
-                }
-              }}
-              activeOpacity={assignedCompanies.length > 1 ? 0.8 : 1}
+        {/* SECCIÓN 1: Datos del Paciente y Empresa */}
+        <View
+          style={[
+            styles.sectionCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.cardBorder,
+              shadowColor: colors.shadowColor,
+            },
+          ]}
+        >
+          <View style={[styles.sectionHeader, { borderBottomColor: colors.border }]}>
+            <View
+              style={[
+                styles.sectionIconBadge,
+                {
+                  backgroundColor: colors.primaryLight,
+                  borderColor: colors.primaryBorder,
+                },
+              ]}
             >
-              <View style={styles.companySelectorLeft}>
-                <View style={styles.companyIconBadge}>
-                  <Building2 size={18} color="#34D399" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.selectedCompanyName}>{companyName}</Text>
-                  <Text style={styles.selectedCompanySubtitle}>
-                    {assignedCompanies.length > 1
-                      ? 'Toca para cambiar de empresa o planta'
-                      : 'Empresa Corporativa Asignada (In-House)'}
+              <User size={18} color={colors.primary} />
+            </View>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+              1. Datos del Trabajador / Paciente
+            </Text>
+          </View>
+
+          {/* Selector de Empresa */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+              Empresa Asignada
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.companySelectorButton,
+                {
+                  backgroundColor: colors.surfaceSecondary,
+                  borderColor: colors.border,
+                },
+              ]}
+              onPress={() => setIsCompanyModalVisible(true)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.companySelectorContent}>
+                <Building2 size={18} color={colors.primary} style={{ marginRight: 10 }} />
+                <View>
+                  <Text style={[styles.companySelectorName, { color: colors.textPrimary }]}>
+                    {companyName}
+                  </Text>
+                  <Text style={[styles.companySelectorSubtitle, { color: colors.textSecondary }]}>
+                    Empresa Corporativa In-House Asignada
                   </Text>
                 </View>
               </View>
-              {assignedCompanies.length > 1 ? (
-                <ChevronDown size={18} color="#94A3B8" />
-              ) : (
-                <View style={styles.checkBadgeSmall}>
-                  <Check size={12} color="#34D399" />
-                </View>
-              )}
+              <ChevronDown size={18} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
-        </View>
 
-        {/* SECCIÓN 2: SIGNOS VITALES & IMC */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIconBadge, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
-              <Activity size={18} color="#60A5FA" />
-            </View>
-            <Text style={styles.sectionTitle}>2. Signos Vitales & Somatometría</Text>
-          </View>
-
-          <View style={styles.rowInputs}>
-            <View style={[styles.inputGroup, styles.flex1, { marginRight: 8 }]}>
-              <Text style={styles.label}>Presión Sistólica (mmHg)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="120"
-                placeholderTextColor="#64748B"
-                value={systolic}
-                onChangeText={setSystolic}
-                keyboardType="numeric"
-              />
-            </View>
-
-            <View style={[styles.inputGroup, styles.flex1, { marginLeft: 8 }]}>
-              <Text style={styles.label}>Presión Diastólica (mmHg)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="80"
-                placeholderTextColor="#64748B"
-                value={diastolic}
-                onChangeText={setDiastolic}
-                keyboardType="numeric"
-              />
-            </View>
-          </View>
-
-          <View style={styles.rowInputs}>
-            <View style={[styles.inputGroup, styles.flex1, { marginRight: 8 }]}>
-              <Text style={styles.label}>Frecuencia Cardíaca (lpm)</Text>
-              <View style={styles.inputWithIcon}>
-                <Heart size={16} color="#F87171" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.inputInside}
-                  placeholder="75"
-                  placeholderTextColor="#64748B"
-                  value={heartRate}
-                  onChangeText={setHeartRate}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-
-            <View style={[styles.inputGroup, styles.flex1, { marginLeft: 8 }]}>
-              <Text style={styles.label}>Temperatura (°C)</Text>
-              <View style={styles.inputWithIcon}>
-                <Thermometer size={16} color="#FBBF24" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.inputInside}
-                  placeholder="36.5"
-                  placeholderTextColor="#64748B"
-                  value={temperature}
-                  onChangeText={setTemperature}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.rowInputs}>
-            <View style={[styles.inputGroup, styles.flex1, { marginRight: 8 }]}>
-              <Text style={styles.label}>Peso (kg)</Text>
-              <View style={styles.inputWithIcon}>
-                <Scale size={16} color="#34D399" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.inputInside}
-                  placeholder="74.5"
-                  placeholderTextColor="#64748B"
-                  value={weightKg}
-                  onChangeText={setWeightKg}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-
-            <View style={[styles.inputGroup, styles.flex1, { marginLeft: 8 }]}>
-              <Text style={styles.label}>Altura (cm)</Text>
-              <View style={styles.inputWithIcon}>
-                <Ruler size={16} color="#60A5FA" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.inputInside}
-                  placeholder="175"
-                  placeholderTextColor="#64748B"
-                  value={heightCm}
-                  onChangeText={setHeightCm}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* Widget de Cálculo Automático de IMC */}
-          {calculatedBmi && (
-            <View style={[styles.bmiCard, { borderColor: calculatedBmi.color }]}>
-              <View style={styles.bmiInfo}>
-                <Text style={styles.bmiTitle}>Índice de Masa Corporal (IMC)</Text>
-                <Text style={[styles.bmiValue, { color: calculatedBmi.color }]}>
-                  {calculatedBmi.value} kg/m²
-                </Text>
-              </View>
-              <View style={[styles.bmiBadge, { backgroundColor: `${calculatedBmi.color}20` }]}>
-                <Text style={[styles.bmiBadgeText, { color: calculatedBmi.color }]}>
-                  {calculatedBmi.category}
-                </Text>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* SECCIÓN 3: EVALUACIÓN CLÍNICA & TRATAMIENTO */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIconBadge, { backgroundColor: 'rgba(251, 191, 36, 0.15)' }]}>
-              <Stethoscope size={18} color="#FBBF24" />
-            </View>
-            <Text style={styles.sectionTitle}>3. Diagnóstico & Tratamiento</Text>
-          </View>
-
+          {/* Nombre Completo */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>
-              Motivo de Consulta <Text style={styles.required}>*</Text>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+              Nombre del Paciente <Text style={{ color: colors.dangerText }}>*</Text>
+            </Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.inputBorder,
+                },
+              ]}
+            >
+              <User size={18} color={colors.textMuted} style={styles.inputIcon} />
+              <TextInput
+                style={[styles.textInput, { color: colors.inputText }]}
+                placeholder="Ej. Juan Pérez García"
+                placeholderTextColor={colors.inputPlaceholder}
+                value={patientName}
+                onChangeText={(text) => {
+                  setPatientName(text);
+                  if (validationError) setValidationError(null);
+                }}
+              />
+            </View>
+          </View>
+
+          {/* Fila: Edad y Número de Empleado */}
+          <View style={styles.rowInputs}>
+            <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Edad (Años)</Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  {
+                    backgroundColor: colors.inputBackground,
+                    borderColor: colors.inputBorder,
+                  },
+                ]}
+              >
+                <TextInput
+                  style={[styles.textInput, { color: colors.inputText }]}
+                  placeholder="34"
+                  placeholderTextColor={colors.inputPlaceholder}
+                  keyboardType="numeric"
+                  value={patientAge}
+                  onChangeText={setPatientAge}
+                  maxLength={3}
+                />
+              </View>
+            </View>
+
+            <View style={[styles.inputGroup, { flex: 1.4 }]}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                No. Nómina / Empleado
+              </Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  {
+                    backgroundColor: colors.inputBackground,
+                    borderColor: colors.inputBorder,
+                  },
+                ]}
+              >
+                <Hash size={16} color={colors.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.textInput, { color: colors.inputText }]}
+                  placeholder="EMP-1092"
+                  placeholderTextColor={colors.inputPlaceholder}
+                  value={employeeNumber}
+                  onChangeText={setEmployeeNumber}
+                />
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* SECCIÓN 2: Somatometría y Signos Vitales */}
+        <View
+          style={[
+            styles.sectionCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.cardBorder,
+              shadowColor: colors.shadowColor,
+            },
+          ]}
+        >
+          <View style={[styles.sectionHeader, { borderBottomColor: colors.border }]}>
+            <View
+              style={[
+                styles.sectionIconBadge,
+                {
+                  backgroundColor: colors.infoBg,
+                  borderColor: colors.infoBorder,
+                },
+              ]}
+            >
+              <Activity size={18} color={colors.infoText} />
+            </View>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+              2. Somatometría y Signos Vitales
+            </Text>
+          </View>
+
+          {/* Grid de Signos Vitales */}
+          <View style={styles.vitalsGrid}>
+            {/* Presión Arterial */}
+            <View
+              style={[
+                styles.vitalCard,
+                {
+                  backgroundColor: colors.surfaceSecondary,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View style={styles.vitalHeader}>
+                <Heart size={15} color={colors.dangerText} style={{ marginRight: 4 }} />
+                <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>
+                  Presión (mmHg)
+                </Text>
+              </View>
+              <View style={styles.vitalSplitRow}>
+                <TextInput
+                  style={[
+                    styles.vitalSmallInput,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.inputBorder,
+                      color: colors.inputText,
+                    },
+                  ]}
+                  placeholder="120"
+                  placeholderTextColor={colors.inputPlaceholder}
+                  keyboardType="numeric"
+                  value={systolic}
+                  onChangeText={setSystolic}
+                  maxLength={3}
+                />
+                <Text style={{ color: colors.textMuted, marginHorizontal: 4 }}>/</Text>
+                <TextInput
+                  style={[
+                    styles.vitalSmallInput,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.inputBorder,
+                      color: colors.inputText,
+                    },
+                  ]}
+                  placeholder="80"
+                  placeholderTextColor={colors.inputPlaceholder}
+                  keyboardType="numeric"
+                  value={diastolic}
+                  onChangeText={setDiastolic}
+                  maxLength={3}
+                />
+              </View>
+            </View>
+
+            {/* Frecuencia Cardíaca */}
+            <View
+              style={[
+                styles.vitalCard,
+                {
+                  backgroundColor: colors.surfaceSecondary,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View style={styles.vitalHeader}>
+                <Activity size={15} color={colors.primary} style={{ marginRight: 4 }} />
+                <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>Pulso (lpm)</Text>
+              </View>
+              <TextInput
+                style={[
+                  styles.vitalSingleInput,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.inputBorder,
+                    color: colors.inputText,
+                  },
+                ]}
+                placeholder="72"
+                placeholderTextColor={colors.inputPlaceholder}
+                keyboardType="numeric"
+                value={heartRate}
+                onChangeText={setHeartRate}
+                maxLength={3}
+              />
+            </View>
+
+            {/* Temperatura */}
+            <View
+              style={[
+                styles.vitalCard,
+                {
+                  backgroundColor: colors.surfaceSecondary,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View style={styles.vitalHeader}>
+                <Thermometer size={15} color={colors.warningText} style={{ marginRight: 4 }} />
+                <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>Temp (°C)</Text>
+              </View>
+              <TextInput
+                style={[
+                  styles.vitalSingleInput,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.inputBorder,
+                    color: colors.inputText,
+                  },
+                ]}
+                placeholder="36.5"
+                placeholderTextColor={colors.inputPlaceholder}
+                keyboardType="decimal-pad"
+                value={temperature}
+                onChangeText={setTemperature}
+                maxLength={4}
+              />
+            </View>
+
+            {/* Peso */}
+            <View
+              style={[
+                styles.vitalCard,
+                {
+                  backgroundColor: colors.surfaceSecondary,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View style={styles.vitalHeader}>
+                <Scale size={15} color={colors.infoText} style={{ marginRight: 4 }} />
+                <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>Peso (kg)</Text>
+              </View>
+              <TextInput
+                style={[
+                  styles.vitalSingleInput,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.inputBorder,
+                    color: colors.inputText,
+                  },
+                ]}
+                placeholder="70.5"
+                placeholderTextColor={colors.inputPlaceholder}
+                keyboardType="decimal-pad"
+                value={weightKg}
+                onChangeText={setWeightKg}
+                maxLength={5}
+              />
+            </View>
+
+            {/* Talla */}
+            <View
+              style={[
+                styles.vitalCard,
+                {
+                  backgroundColor: colors.surfaceSecondary,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View style={styles.vitalHeader}>
+                <Ruler size={15} color="#A78BFA" style={{ marginRight: 4 }} />
+                <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>Talla (cm)</Text>
+              </View>
+              <TextInput
+                style={[
+                  styles.vitalSingleInput,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.inputBorder,
+                    color: colors.inputText,
+                  },
+                ]}
+                placeholder="172"
+                placeholderTextColor={colors.inputPlaceholder}
+                keyboardType="numeric"
+                value={heightCm}
+                onChangeText={setHeightCm}
+                maxLength={3}
+              />
+            </View>
+
+            {/* Cálculo de IMC */}
+            <View
+              style={[
+                styles.vitalCard,
+                {
+                  backgroundColor: colors.surfaceSecondary,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View style={styles.vitalHeader}>
+                <Activity size={15} color={colors.primary} style={{ marginRight: 4 }} />
+                <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>IMC Calc</Text>
+              </View>
+              {calculatedBmi ? (
+                <View style={styles.bmiResultRow}>
+                  <Text style={[styles.bmiValueText, { color: calculatedBmi.color }]}>
+                    {calculatedBmi.value}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.bmiCategoryText,
+                      { color: calculatedBmi.color, borderColor: calculatedBmi.color },
+                    ]}
+                  >
+                    {calculatedBmi.category}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={[styles.bmiEmptyText, { color: colors.textMuted }]}>
+                  Ingresa peso y talla
+                </Text>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* SECCIÓN 3: Evaluación Médica y Diagnóstico */}
+        <View
+          style={[
+            styles.sectionCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.cardBorder,
+              shadowColor: colors.shadowColor,
+            },
+          ]}
+        >
+          <View style={[styles.sectionHeader, { borderBottomColor: colors.border }]}>
+            <View
+              style={[
+                styles.sectionIconBadge,
+                {
+                  backgroundColor: colors.primaryLight,
+                  borderColor: colors.primaryBorder,
+                },
+              ]}
+            >
+              <Stethoscope size={18} color={colors.primary} />
+            </View>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+              3. Evaluación Clínica y Diagnóstico
+            </Text>
+          </View>
+
+          {/* Motivo de Consulta */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+              Motivo de Consulta <Text style={{ color: colors.dangerText }}>*</Text>
             </Text>
             <TextInput
-              style={styles.input}
-              placeholder="Ej. Dolor lumbar agudo tras maniobra de carga"
-              placeholderTextColor="#64748B"
+              style={[
+                styles.textArea,
+                {
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.inputBorder,
+                  color: colors.inputText,
+                },
+              ]}
+              placeholder="Ej. Dolor lumbar agudo tras levantamiento de carga en almacén..."
+              placeholderTextColor={colors.inputPlaceholder}
               value={chiefComplaint}
               onChangeText={setChiefComplaint}
+              multiline
+              numberOfLines={2}
             />
           </View>
 
+          {/* Síntomas y Exploración */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Síntomas / Exploración Física</Text>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+              Exploración Física y Síntomas
+            </Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Describe síntomas referidos, tiempo de evolución y hallazgos a la exploración..."
-              placeholderTextColor="#64748B"
+              style={[
+                styles.textArea,
+                {
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.inputBorder,
+                  color: colors.inputText,
+                },
+              ]}
+              placeholder="Contractura paravertebral L4-L5, arcos de movilidad limitados..."
+              placeholderTextColor={colors.inputPlaceholder}
               value={symptoms}
               onChangeText={setSymptoms}
               multiline
-              numberOfLines={3}
+              numberOfLines={2}
             />
           </View>
 
+          {/* Diagnóstico Ocupacional */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>
-              Diagnóstico Médico <Text style={styles.required}>*</Text>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+              Diagnóstico / Impresión Diagnóstica <Text style={{ color: colors.dangerText }}>*</Text>
             </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ej. Cefalea Tensional / Fatiga Ocular Laboral"
-              placeholderTextColor="#64748B"
-              value={diagnosisDescription}
-              onChangeText={setDiagnosisDescription}
-            />
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.inputBorder,
+                },
+              ]}
+            >
+              <FileText size={18} color={colors.primary} style={styles.inputIcon} />
+              <TextInput
+                style={[styles.textInput, { color: colors.inputText }]}
+                placeholder="Ej. Lumbalgia Mecánica Ocupacional (CIE-10 M54.5)"
+                placeholderTextColor={colors.inputPlaceholder}
+                value={diagnosisDescription}
+                onChangeText={setDiagnosisDescription}
+              />
+            </View>
           </View>
 
+          {/* Plan de Tratamiento */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>
-              Plan de Tratamiento e Indicaciones <Text style={styles.required}>*</Text>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+              Plan de Tratamiento y Reposo <Text style={{ color: colors.dangerText }}>*</Text>
             </Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Paracetamol 500mg cada 8 horas por 3 días. Hidratación constante y pausas activas..."
-              placeholderTextColor="#64748B"
+              style={[
+                styles.textArea,
+                {
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.inputBorder,
+                  color: colors.inputText,
+                },
+              ]}
+              placeholder="Reposo relativo por 48 horas, higiene postural, aplicación de frío/calor..."
+              placeholderTextColor={colors.inputPlaceholder}
               value={treatmentPlan}
               onChangeText={setTreatmentPlan}
               multiline
-              numberOfLines={3}
+              numberOfLines={2}
             />
           </View>
 
+          {/* Receta y Medicamentos */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Observaciones o Notas de Incapacidad (Opcional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Apto para continuar labores con descansos visuales cada hora."
-              placeholderTextColor="#64748B"
-              value={prescriptionNotes}
-              onChangeText={setPrescriptionNotes}
-            />
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+              Receta / Medicación Prescrita
+            </Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.inputBorder,
+                },
+              ]}
+            >
+              <Pill size={18} color={colors.textMuted} style={styles.inputIcon} />
+              <TextInput
+                style={[styles.textInput, { color: colors.inputText }]}
+                placeholder="Ej. Ibuprofeno 400mg c/8h por 3 días, Paracetamol 500mg..."
+                placeholderTextColor={colors.inputPlaceholder}
+                value={prescriptionNotes}
+                onChangeText={setPrescriptionNotes}
+              />
+            </View>
           </View>
         </View>
 
-        {/* Botón de Guardar Consulta */}
+        {/* Botón Guardar Consulta */}
         <TouchableOpacity
-          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+          style={[
+            styles.saveButton,
+            {
+              backgroundColor: colors.primary,
+              shadowColor: colors.primary,
+            },
+            isSaving && styles.saveButtonDisabled,
+          ]}
           onPress={handleSave}
           disabled={isSaving}
           activeOpacity={0.8}
         >
-          <Save size={20} color="#0F172A" style={{ marginRight: 10 }} />
-          <Text style={styles.saveButtonText}>
-            {isSaving ? 'Guardando...' : 'Guardar Consulta en Dispositivo'}
-          </Text>
+          {isSaving ? (
+            <Text style={[styles.saveButtonText, { color: colors.textInverse }]}>
+              Guardando Consulta...
+            </Text>
+          ) : (
+            <View style={styles.saveButtonContent}>
+              <Save size={20} color={colors.textInverse} style={{ marginRight: 8 }} />
+              <Text style={[styles.saveButtonText, { color: colors.textInverse }]}>
+                Guardar Historia Clínica
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
 
         <View style={styles.footerNote}>
-          <Text style={styles.footerNoteText}>
-            El expediente se guardará de forma segura en este dispositivo y se subirá automáticamente
-            al servidor cuando haya conexión.
+          <Text style={[styles.footerNoteText, { color: colors.textMuted }]}>
+            Los datos se guardan de forma segura localmente con cifrado y se sincronizan en cuanto
+            haya conexión.
           </Text>
         </View>
       </ScrollView>
 
-      {/* Modal Selector de Empresa Asignada */}
+      {/* Modal Selector de Empresa */}
       <Modal
         visible={isCompanyModalVisible}
         animationType="slide"
         transparent
         onRequestClose={() => setIsCompanyModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}>
+          <View
+            style={[
+              styles.modalContainer,
+              {
+                backgroundColor: colors.modalContainer,
+                borderColor: colors.modalBorder,
+              },
+            ]}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <View>
-                <Text style={styles.modalTitle}>Empresa Asignada</Text>
-                <Text style={styles.modalSubtitle}>Selecciona la empresa o planta del trabajador</Text>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
+                  Seleccionar Empresa
+                </Text>
+                <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
+                  Empresas cliente asignadas a tu cuenta
+                </Text>
               </View>
               <TouchableOpacity
-                style={styles.closeButton}
+                style={[styles.closeButton, { backgroundColor: colors.surfaceSecondary }]}
                 onPress={() => setIsCompanyModalVisible(false)}
               >
-                <X size={20} color="#94A3B8" />
+                <X size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <View style={{ padding: 16 }}>
-              {assignedCompanies.map((company) => {
-                const isSelected = company.name === companyName;
+              {assignedCompanies.map((comp) => {
+                const isSelected = companyName === comp.name;
                 return (
                   <TouchableOpacity
-                    key={company.id}
-                    style={[styles.companyOptionCard, isSelected && styles.companyOptionCardSelected]}
+                    key={comp.id}
+                    style={[
+                      styles.companyOptionCard,
+                      {
+                        backgroundColor: isSelected ? colors.primaryLight : colors.surfaceSecondary,
+                        borderColor: isSelected ? colors.primary : colors.border,
+                      },
+                    ]}
                     onPress={() => {
-                      setCompanyName(company.name);
+                      setCompanyName(comp.name);
                       setIsCompanyModalVisible(false);
                     }}
                     activeOpacity={0.8}
                   >
-                    <View style={[styles.companyOptionIcon, isSelected && styles.companyOptionIconSelected]}>
-                      <Building2 size={20} color={isSelected ? '#34D399' : '#94A3B8'} />
+                    <View
+                      style={[
+                        styles.companyOptionIcon,
+                        {
+                          backgroundColor: isSelected ? colors.primary : colors.card,
+                        },
+                      ]}
+                    >
+                      <Building2
+                        size={20}
+                        color={isSelected ? colors.textInverse : colors.primary}
+                      />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.companyOptionName, isSelected && styles.companyOptionNameSelected]}>
-                        {company.name}
+                      <Text
+                        style={[
+                          styles.companyOptionName,
+                          { color: isSelected ? colors.primary : colors.textPrimary },
+                        ]}
+                      >
+                        {comp.name}
                       </Text>
-                      <Text style={styles.companyOptionSubtitle}>{company.subtitle}</Text>
+                      <Text
+                        style={[styles.companyOptionSubtitle, { color: colors.textSecondary }]}
+                      >
+                        {comp.subtitle}
+                      </Text>
                     </View>
-                    {isSelected && (
-                      <View style={styles.checkBadge}>
-                        <Check size={14} color="#0F172A" />
-                      </View>
-                    )}
+                    {isSelected && <Check size={18} color={colors.primary} />}
                   </TouchableOpacity>
                 );
               })}
@@ -610,255 +958,233 @@ export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : 20,
-    paddingBottom: 16,
-    backgroundColor: '#1E293B',
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#334155',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  headerTitles: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: '#94A3B8',
-    marginTop: 2,
-  },
-  offlineBadge: {
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.3)',
-  },
-  offlineBadgeText: {
-    color: '#34D399',
-    fontSize: 11,
-    fontWeight: '700',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    padding: 18,
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
     paddingBottom: 40,
-    maxWidth: 600,
+    maxWidth: 480,
     width: '100%',
     alignSelf: 'center',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    borderWidth: 1,
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  themeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+    borderWidth: 1,
   },
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
     padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderRadius: 14,
     marginBottom: 16,
+    borderWidth: 1,
   },
   errorText: {
-    color: '#F87171',
     fontSize: 13,
-    fontWeight: '600',
     flex: 1,
-  },
-  successBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.3)',
-    marginBottom: 16,
-  },
-  successText: {
-    color: '#34D399',
-    fontSize: 13,
-    fontWeight: '600',
-    flex: 1,
-  },
-  bannerIcon: {
-    marginRight: 10,
   },
   sectionCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 18,
     borderWidth: 1,
-    borderColor: '#334155',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingBottom: 12,
+    marginBottom: 14,
+    borderBottomWidth: 1,
   },
   sectionIconBadge: {
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
+    borderWidth: 1,
   },
   sectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
   inputGroup: {
     marginBottom: 14,
   },
-  label: {
+  inputLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#94A3B8',
     marginBottom: 6,
   },
-  required: {
-    color: '#F87171',
-  },
-  input: {
-    backgroundColor: '#0F172A',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    color: '#FFFFFF',
-    fontSize: 14,
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#334155',
+    paddingHorizontal: 12,
+    height: 46,
+  },
+  inputIcon: {
+    marginRight: 8,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 14,
   },
   textArea: {
-    minHeight: 70,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    fontSize: 14,
+    minHeight: 64,
     textAlignVertical: 'top',
   },
   rowInputs: {
     flexDirection: 'row',
   },
-  flex1: {
-    flex: 1,
-  },
-  inputWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0F172A',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#334155',
-    paddingHorizontal: 12,
-  },
-  inputIcon: {
-    marginRight: 8,
-  },
-  inputInside: {
-    flex: 1,
-    paddingVertical: 10,
-    color: '#FFFFFF',
-    fontSize: 14,
-  },
-  companySelectorCard: {
+  companySelectorButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#0F172A',
     borderRadius: 14,
+    borderWidth: 1,
     padding: 12,
-    borderWidth: 1,
-    borderColor: '#334155',
   },
-  companySelectorLeft: {
+  companySelectorContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
   },
-  companyIconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  selectedCompanyName: {
+  companySelectorName: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
-  selectedCompanySubtitle: {
+  companySelectorSubtitle: {
     fontSize: 11,
-    color: '#64748B',
     marginTop: 2,
   },
-  bmiCard: {
+  vitalsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  vitalCard: {
+    width: '48%',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 10,
+    marginBottom: 10,
+  },
+  vitalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#0F172A',
-    borderRadius: 14,
-    padding: 14,
-    marginTop: 4,
-    borderWidth: 1,
+    marginBottom: 6,
   },
-  bmiInfo: {
-    flex: 1,
-  },
-  bmiTitle: {
-    fontSize: 12,
+  vitalLabel: {
+    fontSize: 11,
     fontWeight: '600',
-    color: '#94A3B8',
   },
-  bmiValue: {
-    fontSize: 18,
+  vitalSplitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  vitalSmallInput: {
+    flex: 1,
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  vitalSingleInput: {
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  bmiResultRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 2,
+  },
+  bmiValueText: {
+    fontSize: 15,
     fontWeight: '800',
+  },
+  bmiCategoryText: {
+    fontSize: 10,
+    fontWeight: '700',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 6,
+    borderWidth: 1,
     marginTop: 2,
   },
-  bmiBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  bmiBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
+  bmiEmptyText: {
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 6,
   },
   saveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#34D399',
     borderRadius: 16,
-    paddingVertical: 15,
-    marginTop: 8,
+    height: 52,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
   saveButtonDisabled: {
     opacity: 0.6,
   },
+  saveButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   saveButtonText: {
-    color: '#0F172A',
     fontSize: 15,
     fontWeight: '800',
   },
@@ -868,25 +1194,21 @@ const styles = StyleSheet.create({
   },
   footerNoteText: {
     fontSize: 11,
-    color: '#64748B',
     textAlign: 'center',
     lineHeight: 16,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
     alignItems: 'center',
   },
   modalContainer: {
-    backgroundColor: '#1E293B',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     width: '100%',
     maxWidth: 420,
     paddingBottom: 40,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -894,80 +1216,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#334155',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#FFFFFF',
   },
   modalSubtitle: {
     fontSize: 12,
-    color: '#94A3B8',
     marginTop: 2,
   },
   closeButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#334155',
     justifyContent: 'center',
     alignItems: 'center',
   },
   companyOptionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0F172A',
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#334155',
-  },
-  companyOptionCardSelected: {
-    borderColor: '#34D399',
-    backgroundColor: 'rgba(52, 211, 153, 0.08)',
   },
   companyOptionIcon: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#1E293B',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  companyOptionIconSelected: {
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
-  },
   companyOptionName: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  companyOptionNameSelected: {
-    color: '#34D399',
   },
   companyOptionSubtitle: {
     fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  checkBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#34D399',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 10,
-  },
-  checkBadgeSmall: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });

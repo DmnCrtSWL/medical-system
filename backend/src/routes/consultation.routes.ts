@@ -4,6 +4,8 @@ import {
   getConsultations,
   getConsultationById,
   getConsultationAnalytics,
+  getDoctorPatients,
+  getPatientHistory,
 } from '../controllers/consultation.controller';
 import { authenticateToken } from '../middlewares/auth.middleware';
 
@@ -14,6 +16,8 @@ router.use(authenticateToken);
 
 router.post('/sync', syncConsultations);
 router.get('/analytics', getConsultationAnalytics);
+router.get('/patients', getDoctorPatients);
+router.get('/patients/:patientId/history', getPatientHistory);
 router.get('/', getConsultations);
 router.get('/:id', getConsultationById);
 

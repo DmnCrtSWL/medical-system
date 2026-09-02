@@ -26,6 +26,7 @@ import {
 } from 'lucide-react-native';
 import { patientsService } from '../services/patients';
 import { PatientSummary } from '../types';
+import { useTheme } from '../context/ThemeContext';
 
 interface PatientsListScreenProps {
   onBack: () => void;
@@ -38,6 +39,7 @@ export const PatientsListScreen: React.FC<PatientsListScreenProps> = ({
   onSelectPatient,
   onNewConsultation,
 }) => {
+  const { colors, isDark } = useTheme();
   const [patients, setPatients] = useState<PatientSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -79,24 +81,43 @@ export const PatientsListScreen: React.FC<PatientsListScreenProps> = ({
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.headerBackground}
+      />
 
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Header Quirúrgico */}
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: colors.headerBackground,
+            borderBottomColor: colors.headerBorder,
+          },
+        ]}
+      >
         <View style={styles.headerTopRow}>
           <TouchableOpacity
-            style={styles.iconButton}
+            style={[
+              styles.iconButton,
+              {
+                backgroundColor: colors.surfaceSecondary,
+                borderColor: colors.border,
+              },
+            ]}
             onPress={onBack}
             activeOpacity={0.7}
             accessibilityLabel="Regresar"
           >
-            <ArrowLeft size={20} color="#FFFFFF" />
+            <ArrowLeft size={20} color={colors.textPrimary} />
           </TouchableOpacity>
 
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>Historial de Pacientes</Text>
-            <Text style={styles.headerSubtitle}>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+              Historial de Pacientes
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
               {patients.length === 1
                 ? '1 paciente registrado'
                 : `${patients.length} pacientes registrados`}
@@ -104,20 +125,28 @@ export const PatientsListScreen: React.FC<PatientsListScreenProps> = ({
           </View>
         </View>
 
-        {/* Buscador */}
-        <View style={styles.searchContainer}>
-          <Search size={18} color="#64748B" style={styles.searchIcon} />
+        {/* Buscador Minimalista */}
+        <View
+          style={[
+            styles.searchContainer,
+            {
+              backgroundColor: colors.inputBackground,
+              borderColor: colors.inputBorder,
+            },
+          ]}
+        >
+          <Search size={18} color={colors.inputPlaceholder} style={styles.searchIcon} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.inputText }]}
             placeholder="Buscar por nombre, diagnóstico o nómina..."
-            placeholderTextColor="#64748B"
+            placeholderTextColor={colors.inputPlaceholder}
             value={searchTerm}
             onChangeText={setSearchTerm}
             autoCorrect={false}
           />
           {searchTerm.length > 0 && (
             <TouchableOpacity onPress={() => setSearchTerm('')} style={styles.clearSearchButton}>
-              <X size={16} color="#64748B" />
+              <X size={16} color={colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -126,8 +155,10 @@ export const PatientsListScreen: React.FC<PatientsListScreenProps> = ({
       {/* Contenido Principal */}
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#34D399" />
-          <Text style={styles.loadingText}>Cargando historial clínico...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textMuted }]}>
+            Cargando historial clínico...
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -138,77 +169,144 @@ export const PatientsListScreen: React.FC<PatientsListScreenProps> = ({
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
-              tintColor="#34D399"
-              colors={['#34D399']}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
           ListEmptyComponent={
             <View style={styles.emptyStateContainer}>
-              <View style={styles.emptyStateIconContainer}>
-                <User size={36} color="#64748B" />
+              <View
+                style={[
+                  styles.emptyStateIconContainer,
+                  {
+                    backgroundColor: colors.surfaceSecondary,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <User size={36} color={colors.textMuted} />
               </View>
-              <Text style={styles.emptyStateTitle}>
+              <Text style={[styles.emptyStateTitle, { color: colors.textPrimary }]}>
                 {searchTerm ? 'No se encontraron pacientes' : 'Directorio vacío'}
               </Text>
-              <Text style={styles.emptyStateText}>
+              <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
                 {searchTerm
                   ? `No hay registros que coincidan con "${searchTerm}".`
                   : 'Aún no has registrado consultas médicas en este dispositivo.'}
               </Text>
               <TouchableOpacity
-                style={styles.emptyStateButton}
+                style={[
+                  styles.emptyStateButton,
+                  {
+                    backgroundColor: colors.primaryLight,
+                    borderColor: colors.primaryBorder,
+                  },
+                ]}
                 onPress={onNewConsultation}
                 activeOpacity={0.8}
               >
-                <Plus size={16} color="#34D399" style={{ marginRight: 6 }} />
-                <Text style={styles.emptyStateButtonText}>Iniciar Primera Consulta</Text>
+                <Plus size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.emptyStateButtonText, { color: colors.primary }]}>
+                  Iniciar Primera Consulta
+                </Text>
               </TouchableOpacity>
             </View>
           }
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={styles.patientCard}
+              style={[
+                styles.patientCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.cardBorder,
+                  shadowColor: colors.shadowColor,
+                },
+              ]}
               onPress={() => onSelectPatient(item)}
               activeOpacity={0.8}
             >
               <View style={styles.patientCardTopRow}>
-                <View style={styles.avatarBadge}>
-                  <User size={20} color="#34D399" />
+                <View
+                  style={[
+                    styles.avatarBadge,
+                    {
+                      backgroundColor: colors.primaryLight,
+                      borderColor: colors.primaryBorder,
+                    },
+                  ]}
+                >
+                  <User size={20} color={colors.primary} />
                 </View>
 
                 <View style={styles.patientMainInfo}>
                   <View style={styles.patientNameRow}>
-                    <Text style={styles.patientName}>{item.name}</Text>
+                    <Text style={[styles.patientName, { color: colors.textPrimary }]}>
+                      {item.name}
+                    </Text>
                     {item.isOfflineOnly && (
-                      <View style={styles.offlineTag}>
-                        <Clock size={10} color="#FBBF24" style={{ marginRight: 3 }} />
-                        <Text style={styles.offlineTagText}>Local</Text>
+                      <View
+                        style={[
+                          styles.offlineTag,
+                          {
+                            backgroundColor: colors.warningBg,
+                            borderColor: colors.warningBorder,
+                          },
+                        ]}
+                      >
+                        <Clock size={10} color={colors.warningText} style={{ marginRight: 3 }} />
+                        <Text style={[styles.offlineTagText, { color: colors.warningText }]}>
+                          Local
+                        </Text>
                       </View>
                     )}
                   </View>
 
                   <View style={styles.companyRow}>
-                    <Building2 size={13} color="#34D399" style={{ marginRight: 4 }} />
-                    <Text style={styles.companyText} numberOfLines={1}>
+                    <Building2 size={13} color={colors.primary} style={{ marginRight: 4 }} />
+                    <Text
+                      style={[styles.companyText, { color: colors.textSecondary }]}
+                      numberOfLines={1}
+                    >
                       {item.companyName}
                     </Text>
                     {item.employeeNumber && (
-                      <View style={styles.employeeTag}>
-                        <Hash size={11} color="#64748B" style={{ marginRight: 2 }} />
-                        <Text style={styles.employeeTagText}>{item.employeeNumber}</Text>
+                      <View
+                        style={[
+                          styles.employeeTag,
+                          {
+                            backgroundColor: colors.surfaceSecondary,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        <Hash size={11} color={colors.textMuted} style={{ marginRight: 2 }} />
+                        <Text style={[styles.employeeTagText, { color: colors.textSecondary }]}>
+                          {item.employeeNumber}
+                        </Text>
                       </View>
                     )}
                   </View>
                 </View>
 
-                <ChevronRight size={20} color="#64748B" />
+                <ChevronRight size={20} color={colors.textMuted} />
               </View>
 
               {/* Diagnosis Summary Row */}
-              <View style={styles.diagnosisBox}>
-                <Stethoscope size={14} color="#34D399" style={styles.diagnosisIcon} />
-                <Text style={styles.diagnosisText} numberOfLines={1}>
-                  <Text style={{ fontWeight: '700', color: '#FFFFFF' }}>Último Dx: </Text>
+              <View
+                style={[
+                  styles.diagnosisBox,
+                  {
+                    backgroundColor: colors.surfaceSecondary,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Stethoscope size={14} color={colors.primary} style={styles.diagnosisIcon} />
+                <Text
+                  style={[styles.diagnosisText, { color: colors.textSecondary }]}
+                  numberOfLines={1}
+                >
+                  <Text style={{ fontWeight: '700', color: colors.textPrimary }}>Último Dx: </Text>
                   {item.lastDiagnosis || 'Consulta médica general'}
                 </Text>
               </View>
@@ -216,12 +314,22 @@ export const PatientsListScreen: React.FC<PatientsListScreenProps> = ({
               {/* Footer Row */}
               <View style={styles.patientCardFooter}>
                 <View style={styles.dateRow}>
-                  <Calendar size={13} color="#64748B" style={{ marginRight: 4 }} />
-                  <Text style={styles.dateText}>{formatDate(item.lastConsultationDate)}</Text>
+                  <Calendar size={13} color={colors.textMuted} style={{ marginRight: 4 }} />
+                  <Text style={[styles.dateText, { color: colors.textMuted }]}>
+                    {formatDate(item.lastConsultationDate)}
+                  </Text>
                 </View>
 
-                <View style={styles.visitsCountBadge}>
-                  <Text style={styles.visitsCountText}>
+                <View
+                  style={[
+                    styles.visitsCountBadge,
+                    {
+                      backgroundColor: colors.primaryLight,
+                      borderColor: colors.primaryBorder,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.visitsCountText, { color: colors.primary }]}>
                     {item.consultationsCount === 1
                       ? '1 Consulta'
                       : `${item.consultationsCount} Consultas`}
@@ -233,14 +341,20 @@ export const PatientsListScreen: React.FC<PatientsListScreenProps> = ({
         />
       )}
 
-      {/* Botón Flotante de Nueva Consulta (+) */}
+      {/* Botón Flotante Circular (FAB) "+" */}
       <TouchableOpacity
-        style={styles.fabButton}
+        style={[
+          styles.fabButton,
+          {
+            backgroundColor: colors.primary,
+            shadowColor: colors.primary,
+          },
+        ]}
         onPress={onNewConsultation}
         activeOpacity={0.85}
         accessibilityLabel="Iniciar Nueva Consulta"
       >
-        <Plus size={28} color="#0F172A" />
+        <Plus size={28} color={colors.textInverse} />
       </TouchableOpacity>
     </View>
   );
@@ -249,14 +363,12 @@ export const PatientsListScreen: React.FC<PatientsListScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
   },
   header: {
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 50 : 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
   },
   headerTopRow: {
     flexDirection: 'row',
@@ -267,11 +379,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 14,
-    backgroundColor: '#1E293B',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
   },
   headerTitleContainer: {
     flex: 1,
@@ -280,21 +390,17 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#FFFFFF',
     letterSpacing: -0.3,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#94A3B8',
     marginTop: 2,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0F172A',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#334155',
     paddingHorizontal: 12,
     height: 44,
   },
@@ -303,7 +409,6 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#FFFFFF',
     fontSize: 14,
     height: '100%',
   },
@@ -326,7 +431,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#94A3B8',
     fontWeight: '500',
   },
   emptyStateContainer: {
@@ -339,22 +443,18 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 24,
-    backgroundColor: '#1E293B',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   emptyStateTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#FFFFFF',
     marginBottom: 6,
   },
   emptyStateText: {
     fontSize: 13,
-    color: '#94A3B8',
     textAlign: 'center',
     lineHeight: 18,
     marginBottom: 20,
@@ -362,30 +462,24 @@ const styles = StyleSheet.create({
   emptyStateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.3)',
   },
   emptyStateButtonText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#34D399',
   },
   patientCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 20,
+    borderRadius: 18,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#334155',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   patientCardTopRow: {
     flexDirection: 'row',
@@ -396,12 +490,10 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
     borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.3)',
   },
   patientMainInfo: {
     flex: 1,
@@ -414,23 +506,19 @@ const styles = StyleSheet.create({
   patientName: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#FFFFFF',
     marginRight: 6,
   },
   offlineTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(251, 191, 36, 0.15)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.3)',
   },
   offlineTagText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#FBBF24',
   },
   companyRow: {
     flexDirection: 'row',
@@ -438,41 +526,34 @@ const styles = StyleSheet.create({
   },
   companyText: {
     fontSize: 12,
-    color: '#94A3B8',
     flexShrink: 1,
   },
   employeeTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0F172A',
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 6,
     marginLeft: 6,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   employeeTagText: {
     fontSize: 10,
-    color: '#94A3B8',
     fontWeight: '600',
   },
   diagnosisBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0F172A',
     padding: 10,
     borderRadius: 12,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   diagnosisIcon: {
     marginRight: 6,
   },
   diagnosisText: {
     fontSize: 12,
-    color: '#94A3B8',
     flex: 1,
   },
   patientCardFooter: {
@@ -487,20 +568,16 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 12,
-    color: '#64748B',
   },
   visitsCountBadge: {
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.3)',
   },
   visitsCountText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#34D399',
   },
   fabButton: {
     position: 'absolute',
@@ -509,14 +586,12 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#34D399',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#34D399',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
-    elevation: 8,
+    elevation: 6,
     zIndex: 99,
   },
 });

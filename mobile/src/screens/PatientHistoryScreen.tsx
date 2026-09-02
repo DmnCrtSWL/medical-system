@@ -32,6 +32,7 @@ import {
 } from 'lucide-react-native';
 import { patientsService } from '../services/patients';
 import { PatientHistoryResponse, PatientHistoryItem } from '../types';
+import { useTheme } from '../context/ThemeContext';
 
 interface PatientHistoryScreenProps {
   patientId: string;
@@ -51,6 +52,7 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
   onBack,
   onNewConsultationForPatient,
 }) => {
+  const { colors, isDark } = useTheme();
   const [historyData, setHistoryData] = useState<PatientHistoryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -102,10 +104,10 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
 
   const getBmiCategoryInfo = (bmi?: number) => {
     if (!bmi) return null;
-    if (bmi < 18.5) return { label: 'Bajo peso', color: '#60A5FA' };
-    if (bmi < 25) return { label: 'Normal', color: '#34D399' };
-    if (bmi < 30) return { label: 'Sobrepeso', color: '#FBBF24' };
-    return { label: 'Obesidad', color: '#F87171' };
+    if (bmi < 18.5) return { label: 'Bajo peso', color: '#3B82F6' };
+    if (bmi < 25) return { label: 'Normal', color: colors.primary };
+    if (bmi < 30) return { label: 'Sobrepeso', color: '#D97706' };
+    return { label: 'Obesidad', color: '#DC2626' };
   };
 
   const handleStartConsultation = () => {
@@ -118,23 +120,45 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.headerBackground}
+      />
 
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Header Quirúrgico */}
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: colors.headerBackground,
+            borderBottomColor: colors.headerBorder,
+          },
+        ]}
+      >
         <TouchableOpacity
-          style={styles.iconButton}
+          style={[
+            styles.iconButton,
+            {
+              backgroundColor: colors.surfaceSecondary,
+              borderColor: colors.border,
+            },
+          ]}
           onPress={onBack}
           activeOpacity={0.7}
           accessibilityLabel="Regresar al directorio"
         >
-          <ArrowLeft size={20} color="#FFFFFF" />
+          <ArrowLeft size={20} color={colors.textPrimary} />
         </TouchableOpacity>
 
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Expediente Clínico</Text>
-          <Text style={styles.headerSubtitle} numberOfLines={1}>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+            Expediente Clínico
+          </Text>
+          <Text
+            style={[styles.headerSubtitle, { color: colors.textSecondary }]}
+            numberOfLines={1}
+          >
             {patientName || historyData?.patient.name || 'Detalle del Paciente'}
           </Text>
         </View>
@@ -142,8 +166,10 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#34D399" />
-          <Text style={styles.loadingText}>Cargando historial clínico...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textMuted }]}>
+            Cargando historial clínico...
+          </Text>
         </View>
       ) : (
         <ScrollView
@@ -153,61 +179,104 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
         >
           {/* Tarjeta de Información General del Paciente */}
           {historyData && (
-            <View style={styles.patientProfileCard}>
+            <View
+              style={[
+                styles.patientProfileCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.cardBorder,
+                  shadowColor: colors.shadowColor,
+                },
+              ]}
+            >
               <View style={styles.profileHeaderRow}>
-                <View style={styles.avatarBadge}>
-                  <User size={28} color="#34D399" />
+                <View
+                  style={[
+                    styles.avatarBadge,
+                    {
+                      backgroundColor: colors.primaryLight,
+                      borderColor: colors.primaryBorder,
+                    },
+                  ]}
+                >
+                  <User size={28} color={colors.primary} />
                 </View>
                 <View style={styles.profileMainInfo}>
-                  <Text style={styles.patientName}>{historyData.patient.name}</Text>
+                  <Text style={[styles.patientName, { color: colors.textPrimary }]}>
+                    {historyData.patient.name}
+                  </Text>
                   <View style={styles.companyBadgeRow}>
-                    <Building2 size={13} color="#34D399" style={{ marginRight: 4 }} />
-                    <Text style={styles.companyNameText}>{historyData.patient.companyName}</Text>
+                    <Building2 size={13} color={colors.primary} style={{ marginRight: 4 }} />
+                    <Text style={[styles.companyNameText, { color: colors.textSecondary }]}>
+                      {historyData.patient.companyName}
+                    </Text>
                   </View>
                 </View>
               </View>
 
               {/* Grid de Metadatos del Paciente */}
-              <View style={styles.patientMetaGrid}>
+              <View
+                style={[
+                  styles.patientMetaGrid,
+                  {
+                    backgroundColor: colors.surfaceSecondary,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
                 {historyData.patient.employeeNumber && (
                   <View style={styles.metaItem}>
-                    <Hash size={13} color="#64748B" style={{ marginRight: 4 }} />
-                    <Text style={styles.metaLabel}>Nómina: </Text>
-                    <Text style={styles.metaValue}>{historyData.patient.employeeNumber}</Text>
+                    <Hash size={13} color={colors.textMuted} style={{ marginRight: 4 }} />
+                    <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Nómina: </Text>
+                    <Text style={[styles.metaValue, { color: colors.textPrimary }]}>
+                      {historyData.patient.employeeNumber}
+                    </Text>
                   </View>
                 )}
 
                 <View style={styles.metaItem}>
-                  <FileText size={13} color="#34D399" style={{ marginRight: 4 }} />
-                  <Text style={styles.metaLabel}>Consultas: </Text>
-                  <Text style={[styles.metaValue, { color: '#34D399' }]}>
+                  <FileText size={13} color={colors.primary} style={{ marginRight: 4 }} />
+                  <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Consultas: </Text>
+                  <Text style={[styles.metaValue, { color: colors.primary }]}>
                     {historyData.patient.totalConsultations}
                   </Text>
                 </View>
 
                 {historyData.patient.phone && (
                   <View style={styles.metaItem}>
-                    <Phone size={13} color="#64748B" style={{ marginRight: 4 }} />
-                    <Text style={styles.metaValue}>{historyData.patient.phone}</Text>
+                    <Phone size={13} color={colors.textMuted} style={{ marginRight: 4 }} />
+                    <Text style={[styles.metaValue, { color: colors.textPrimary }]}>
+                      {historyData.patient.phone}
+                    </Text>
                   </View>
                 )}
 
                 {historyData.patient.email && (
                   <View style={styles.metaItem}>
-                    <Mail size={13} color="#64748B" style={{ marginRight: 4 }} />
-                    <Text style={styles.metaValue}>{historyData.patient.email}</Text>
+                    <Mail size={13} color={colors.textMuted} style={{ marginRight: 4 }} />
+                    <Text style={[styles.metaValue, { color: colors.textPrimary }]}>
+                      {historyData.patient.email}
+                    </Text>
                   </View>
                 )}
               </View>
 
               {/* Botón de Iniciar Nueva Consulta Directa */}
               <TouchableOpacity
-                style={styles.startConsultationButton}
+                style={[
+                  styles.startConsultationButton,
+                  {
+                    backgroundColor: colors.primary,
+                    shadowColor: colors.primary,
+                  },
+                ]}
                 onPress={handleStartConsultation}
                 activeOpacity={0.8}
               >
-                <Plus size={18} color="#0F172A" style={{ marginRight: 8 }} />
-                <Text style={styles.startConsultationButtonText}>
+                <Plus size={18} color={colors.textInverse} style={{ marginRight: 8 }} />
+                <Text
+                  style={[styles.startConsultationButtonText, { color: colors.textInverse }]}
+                >
                   Iniciar Nueva Consulta para este Paciente
                 </Text>
               </TouchableOpacity>
@@ -216,9 +285,19 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
 
           {/* Sección de Historial de Visitas */}
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Historial de Consultas Médicas</Text>
-            <View style={styles.totalBadge}>
-              <Text style={styles.totalBadgeText}>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+              Historial de Consultas Médicas
+            </Text>
+            <View
+              style={[
+                styles.totalBadge,
+                {
+                  backgroundColor: colors.primaryLight,
+                  borderColor: colors.primaryBorder,
+                },
+              ]}
+            >
+              <Text style={[styles.totalBadgeText, { color: colors.primary }]}>
                 {historyData?.consultations.length || 0} Registros
               </Text>
             </View>
@@ -227,9 +306,11 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
           {/* Lista de Consultas */}
           {historyData?.consultations.length === 0 ? (
             <View style={styles.emptyConsultationsBox}>
-              <CheckCircle2 size={40} color="#34D399" style={{ marginBottom: 10 }} />
-              <Text style={styles.emptyTitle}>Sin consultas previas</Text>
-              <Text style={styles.emptySubtitle}>
+              <CheckCircle2 size={40} color={colors.primary} style={{ marginBottom: 10 }} />
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+                Sin consultas previas
+              </Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
                 Este paciente aún no tiene visitas registradas en el historial.
               </Text>
             </View>
@@ -243,7 +324,11 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
                   key={consultation.id || index}
                   style={[
                     styles.consultationCard,
-                    isExpanded && { borderColor: 'rgba(52, 211, 153, 0.4)' },
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: isExpanded ? colors.primaryBorder : colors.cardBorder,
+                      shadowColor: colors.shadowColor,
+                    },
                   ]}
                 >
                   {/* Encabezado de la Consulta */}
@@ -253,14 +338,22 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
                     activeOpacity={0.7}
                   >
                     <View style={styles.consultationHeaderLeft}>
-                      <View style={styles.timelineIcon}>
-                        <Calendar size={16} color="#34D399" />
+                      <View
+                        style={[
+                          styles.timelineIcon,
+                          {
+                            backgroundColor: colors.primaryLight,
+                            borderColor: colors.primaryBorder,
+                          },
+                        ]}
+                      >
+                        <Calendar size={16} color={colors.primary} />
                       </View>
                       <View>
-                        <Text style={styles.consultationDate}>
+                        <Text style={[styles.consultationDate, { color: colors.textPrimary }]}>
                           {formatDate(consultation.consultationDate)}
                         </Text>
-                        <Text style={styles.doctorNameText}>
+                        <Text style={[styles.doctorNameText, { color: colors.textSecondary }]}>
                           Atendido por: {consultation.doctorName}
                         </Text>
                       </View>
@@ -268,25 +361,55 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
 
                     <View style={styles.headerRightActions}>
                       {consultation.status === 'LOCAL_PENDING' && (
-                        <View style={styles.offlineBadge}>
-                          <Clock size={11} color="#FBBF24" style={{ marginRight: 3 }} />
-                          <Text style={styles.offlineBadgeText}>Pendiente</Text>
+                        <View
+                          style={[
+                            styles.offlineBadge,
+                            {
+                              backgroundColor: colors.warningBg,
+                              borderColor: colors.warningBorder,
+                            },
+                          ]}
+                        >
+                          <Clock size={11} color={colors.warningText} style={{ marginRight: 3 }} />
+                          <Text
+                            style={[
+                              styles.offlineBadgeText,
+                              { color: colors.warningText },
+                            ]}
+                          >
+                            Pendiente
+                          </Text>
                         </View>
                       )}
                       {isExpanded ? (
-                        <ChevronUp size={20} color="#64748B" />
+                        <ChevronUp size={20} color={colors.textMuted} />
                       ) : (
-                        <ChevronDown size={20} color="#64748B" />
+                        <ChevronDown size={20} color={colors.textMuted} />
                       )}
                     </View>
                   </TouchableOpacity>
 
                   {/* Diagnóstico Resumido (Siempre visible) */}
-                  <View style={styles.diagnosisSummaryBox}>
-                    <Stethoscope size={16} color="#34D399" style={{ marginRight: 8 }} />
+                  <View
+                    style={[
+                      styles.diagnosisSummaryBox,
+                      {
+                        backgroundColor: colors.surfaceSecondary,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Stethoscope size={16} color={colors.primary} style={{ marginRight: 8 }} />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.diagnosisLabel}>Diagnóstico / Impresión Clínica:</Text>
-                      <Text style={styles.diagnosisDescriptionText}>
+                      <Text style={[styles.diagnosisLabel, { color: colors.textMuted }]}>
+                        Diagnóstico / Impresión Clínica:
+                      </Text>
+                      <Text
+                        style={[
+                          styles.diagnosisDescriptionText,
+                          { color: colors.textPrimary },
+                        ]}
+                      >
                         {consultation.diagnosisDescription}
                       </Text>
                     </View>
@@ -294,16 +417,38 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
 
                   {/* Detalle Expandible de la Consulta */}
                   {isExpanded && (
-                    <View style={styles.expandedContent}>
+                    <View
+                      style={[
+                        styles.expandedContent,
+                        { borderTopColor: colors.border },
+                      ]}
+                    >
                       {/* Signos Vitales Históricos */}
-                      <Text style={styles.subSectionTitle}>Somatometría Registrada:</Text>
+                      <Text style={[styles.subSectionTitle, { color: colors.textMuted }]}>
+                        Somatometría Registrada:
+                      </Text>
 
                       <View style={styles.vitalsSummaryGrid}>
                         {/* Presión */}
-                        <View style={styles.vitalItem}>
-                          <Heart size={14} color="#F87171" style={{ marginRight: 4 }} />
-                          <Text style={styles.vitalItemLabel}>Presión:</Text>
-                          <Text style={styles.vitalItemValue}>
+                        <View
+                          style={[
+                            styles.vitalItem,
+                            {
+                              backgroundColor: colors.surfaceSecondary,
+                              borderColor: colors.border,
+                            },
+                          ]}
+                        >
+                          <Heart size={14} color="#EF4444" style={{ marginRight: 4 }} />
+                          <Text style={[styles.vitalItemLabel, { color: colors.textMuted }]}>
+                            Presión:
+                          </Text>
+                          <Text
+                            style={[
+                              styles.vitalItemValue,
+                              { color: colors.textPrimary },
+                            ]}
+                          >
                             {consultation.vitalSigns?.bloodPressureSystolic &&
                             consultation.vitalSigns?.bloodPressureDiastolic
                               ? `${consultation.vitalSigns.bloodPressureSystolic}/${consultation.vitalSigns.bloodPressureDiastolic} mmHg`
@@ -312,10 +457,25 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
                         </View>
 
                         {/* Pulso */}
-                        <View style={styles.vitalItem}>
-                          <Activity size={14} color="#34D399" style={{ marginRight: 4 }} />
-                          <Text style={styles.vitalItemLabel}>Pulso:</Text>
-                          <Text style={styles.vitalItemValue}>
+                        <View
+                          style={[
+                            styles.vitalItem,
+                            {
+                              backgroundColor: colors.surfaceSecondary,
+                              borderColor: colors.border,
+                            },
+                          ]}
+                        >
+                          <Activity size={14} color={colors.primary} style={{ marginRight: 4 }} />
+                          <Text style={[styles.vitalItemLabel, { color: colors.textMuted }]}>
+                            Pulso:
+                          </Text>
+                          <Text
+                            style={[
+                              styles.vitalItemValue,
+                              { color: colors.textPrimary },
+                            ]}
+                          >
                             {consultation.vitalSigns?.heartRate
                               ? `${consultation.vitalSigns.heartRate} lpm`
                               : 'N/A'}
@@ -323,10 +483,25 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
                         </View>
 
                         {/* Temperatura */}
-                        <View style={styles.vitalItem}>
-                          <Thermometer size={14} color="#FBBF24" style={{ marginRight: 4 }} />
-                          <Text style={styles.vitalItemLabel}>Temp:</Text>
-                          <Text style={styles.vitalItemValue}>
+                        <View
+                          style={[
+                            styles.vitalItem,
+                            {
+                              backgroundColor: colors.surfaceSecondary,
+                              borderColor: colors.border,
+                            },
+                          ]}
+                        >
+                          <Thermometer size={14} color="#F59E0B" style={{ marginRight: 4 }} />
+                          <Text style={[styles.vitalItemLabel, { color: colors.textMuted }]}>
+                            Temp:
+                          </Text>
+                          <Text
+                            style={[
+                              styles.vitalItemValue,
+                              { color: colors.textPrimary },
+                            ]}
+                          >
                             {consultation.vitalSigns?.temperature
                               ? `${consultation.vitalSigns.temperature} °C`
                               : 'N/A'}
@@ -334,13 +509,23 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
                         </View>
 
                         {/* IMC */}
-                        <View style={styles.vitalItem}>
-                          <Scale size={14} color="#60A5FA" style={{ marginRight: 4 }} />
-                          <Text style={styles.vitalItemLabel}>IMC:</Text>
+                        <View
+                          style={[
+                            styles.vitalItem,
+                            {
+                              backgroundColor: colors.surfaceSecondary,
+                              borderColor: colors.border,
+                            },
+                          ]}
+                        >
+                          <Scale size={14} color="#8B5CF6" style={{ marginRight: 4 }} />
+                          <Text style={[styles.vitalItemLabel, { color: colors.textMuted }]}>
+                            IMC:
+                          </Text>
                           <Text
                             style={[
                               styles.vitalItemValue,
-                              { color: bmiInfo ? bmiInfo.color : '#FFFFFF' },
+                              { color: bmiInfo ? bmiInfo.color : colors.textPrimary },
                             ]}
                           >
                             {consultation.vitalSigns?.bmi ? consultation.vitalSigns.bmi : 'N/A'}
@@ -351,31 +536,56 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
                       {/* Motivo de Consulta y Exploración */}
                       <View style={styles.clinicalNotesSection}>
                         <View style={styles.clinicalNoteBlock}>
-                          <Text style={styles.noteHeading}>Motivo de Consulta:</Text>
-                          <Text style={styles.noteBody}>{consultation.chiefComplaint}</Text>
+                          <Text style={[styles.noteHeading, { color: colors.textMuted }]}>
+                            Motivo de Consulta:
+                          </Text>
+                          <Text style={[styles.noteBody, { color: colors.textPrimary }]}>
+                            {consultation.chiefComplaint}
+                          </Text>
                         </View>
 
                         {consultation.symptoms && (
                           <View style={styles.clinicalNoteBlock}>
-                            <Text style={styles.noteHeading}>Exploración Física / Síntomas:</Text>
-                            <Text style={styles.noteBody}>{consultation.symptoms}</Text>
+                            <Text style={[styles.noteHeading, { color: colors.textMuted }]}>
+                              Exploración Física / Síntomas:
+                            </Text>
+                            <Text style={[styles.noteBody, { color: colors.textPrimary }]}>
+                              {consultation.symptoms}
+                            </Text>
                           </View>
                         )}
 
                         <View style={styles.clinicalNoteBlock}>
-                          <Text style={styles.noteHeading}>Plan de Tratamiento:</Text>
-                          <Text style={styles.noteBody}>{consultation.treatmentPlan}</Text>
+                          <Text style={[styles.noteHeading, { color: colors.textMuted }]}>
+                            Plan de Tratamiento:
+                          </Text>
+                          <Text style={[styles.noteBody, { color: colors.textPrimary }]}>
+                            {consultation.treatmentPlan}
+                          </Text>
                         </View>
 
                         {consultation.prescriptionNotes && (
-                          <View style={styles.prescriptionBox}>
+                          <View
+                            style={[
+                              styles.prescriptionBox,
+                              {
+                                backgroundColor: colors.surfaceSecondary,
+                                borderColor: colors.border,
+                              },
+                            ]}
+                          >
                             <View style={styles.prescriptionHeader}>
-                              <Pill size={15} color="#34D399" style={{ marginRight: 6 }} />
-                              <Text style={styles.prescriptionTitle}>
+                              <Pill size={15} color={colors.primary} style={{ marginRight: 6 }} />
+                              <Text style={[styles.prescriptionTitle, { color: colors.primary }]}>
                                 Receta y Medicación Prescrita
                               </Text>
                             </View>
-                            <Text style={styles.prescriptionBody}>
+                            <Text
+                              style={[
+                                styles.prescriptionBody,
+                                { color: colors.textPrimary },
+                              ]}
+                            >
                               {consultation.prescriptionNotes}
                             </Text>
                           </View>
@@ -396,7 +606,6 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
   },
   header: {
     flexDirection: 'row',
@@ -405,17 +614,14 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 50 : 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
   },
   iconButton: {
     width: 40,
     height: 40,
     borderRadius: 14,
-    backgroundColor: '#1E293B',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
   },
   headerTitleContainer: {
     flex: 1,
@@ -424,12 +630,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#FFFFFF',
     letterSpacing: -0.3,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#94A3B8',
     marginTop: 2,
   },
   scrollView: {
@@ -451,21 +655,17 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#94A3B8',
     fontWeight: '500',
   },
   patientProfileCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 22,
+    borderRadius: 20,
     padding: 18,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#334155',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   profileHeaderRow: {
     flexDirection: 'row',
@@ -473,15 +673,13 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   avatarBadge: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
     borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.3)',
   },
   profileMainInfo: {
     flex: 1,
@@ -489,7 +687,6 @@ const styles = StyleSheet.create({
   patientName: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#FFFFFF',
     marginBottom: 3,
   },
   companyBadgeRow: {
@@ -498,17 +695,14 @@ const styles = StyleSheet.create({
   },
   companyNameText: {
     fontSize: 13,
-    color: '#94A3B8',
   },
   patientMetaGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    backgroundColor: '#0F172A',
     borderRadius: 14,
     padding: 12,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   metaItem: {
     flexDirection: 'row',
@@ -518,12 +712,10 @@ const styles = StyleSheet.create({
   },
   metaLabel: {
     fontSize: 12,
-    color: '#64748B',
   },
   metaValue: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
   startConsultationButton: {
     flexDirection: 'row',
@@ -531,8 +723,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: 48,
     borderRadius: 14,
-    backgroundColor: '#34D399',
-    shadowColor: '#34D399',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
@@ -541,7 +731,6 @@ const styles = StyleSheet.create({
   startConsultationButtonText: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0F172A',
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -552,21 +741,17 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#FFFFFF',
     letterSpacing: -0.2,
   },
   totalBadge: {
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.3)',
   },
   totalBadgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#34D399',
   },
   emptyConsultationsBox: {
     padding: 30,
@@ -576,25 +761,20 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
     marginBottom: 4,
   },
   emptySubtitle: {
     fontSize: 12,
-    color: '#94A3B8',
     textAlign: 'center',
   },
   consultationCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 20,
+    borderRadius: 18,
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#334155',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
     elevation: 2,
   },
   consultationHeader: {
@@ -612,21 +792,17 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
     borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.3)',
   },
   consultationDate: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#FFFFFF',
   },
   doctorNameText: {
     fontSize: 11,
-    color: '#94A3B8',
     marginTop: 2,
   },
   headerRightActions: {
@@ -636,50 +812,41 @@ const styles = StyleSheet.create({
   offlineBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(251, 191, 36, 0.15)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.3)',
   },
   offlineBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#FBBF24',
   },
   diagnosisSummaryBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0F172A',
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   diagnosisLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#64748B',
     textTransform: 'uppercase',
   },
   diagnosisDescriptionText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#FFFFFF',
     marginTop: 2,
   },
   expandedContent: {
     marginTop: 14,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: '#334155',
   },
   subSectionTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#94A3B8',
     marginBottom: 8,
     textTransform: 'uppercase',
   },
@@ -693,22 +860,18 @@ const styles = StyleSheet.create({
     width: '48%',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0F172A',
     padding: 8,
     borderRadius: 10,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#334155',
   },
   vitalItemLabel: {
     fontSize: 11,
-    color: '#64748B',
     marginRight: 4,
   },
   vitalItemValue: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
   clinicalNotesSection: {
     gap: 10,
@@ -719,20 +882,16 @@ const styles = StyleSheet.create({
   noteHeading: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#94A3B8',
     marginBottom: 3,
   },
   noteBody: {
     fontSize: 13,
-    color: '#FFFFFF',
     lineHeight: 18,
   },
   prescriptionBox: {
-    backgroundColor: '#0F172A',
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#334155',
     marginTop: 4,
   },
   prescriptionHeader: {
@@ -743,11 +902,9 @@ const styles = StyleSheet.create({
   prescriptionTitle: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#34D399',
   },
   prescriptionBody: {
     fontSize: 12,
-    color: '#FFFFFF',
     lineHeight: 17,
   },
 });

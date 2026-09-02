@@ -5,7 +5,7 @@ import { AuthResponse, DoctorUser, LoginCredentials } from '../types';
 const AUTH_TOKEN_KEY = '@medsys_mobile_token';
 const AUTH_USER_KEY = '@medsys_mobile_user';
 
-// URL del backend: Detecta automáticamente entorno cloud, web o IP local para Expo Go
+// URL del backend: Detecta automáticamente entorno cloud, web o IP local para Expo Go / Simuladores
 export const getBaseApiUrl = (): string => {
   // Prioridad 1: Variable de entorno en Staging o Producción (Vercel Web / EAS Build)
   if (process.env.EXPO_PUBLIC_API_URL) {
@@ -16,7 +16,7 @@ export const getBaseApiUrl = (): string => {
     return 'http://localhost:4000/api';
   }
 
-  // Detectar la IP del host Metro cuando corre en Expo Go en un dispositivo físico
+  // Detectar la IP del host Metro cuando corre en Expo Go o en un simulador
   const scriptURL: string | undefined = NativeModules.SourceCode?.scriptURL;
   if (scriptURL) {
     const address = scriptURL.split('://')[1]?.split('/')[0]?.split(':')[0];
@@ -25,8 +25,18 @@ export const getBaseApiUrl = (): string => {
     }
   }
 
-  // Fallback a IP local de la red Wi-Fi para dispositivos físicos en desarrollo local
-  return 'http://192.168.100.5:4000/api';
+  // En simulador iOS en Mac, localhost apunta directamente a la Mac
+  if (Platform.OS === 'ios') {
+    return 'http://localhost:4000/api';
+  }
+
+  // Para Android Emulator 10.0.2.2 apunta al host
+  if (Platform.OS === 'android') {
+    return 'http://10.0.2.2:4000/api';
+  }
+
+  // Fallback seguro a la IP de la máquina en red local
+  return 'http://192.168.100.6:4000/api';
 };
 
 export const authService = {

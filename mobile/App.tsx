@@ -232,7 +232,7 @@ function MainApp() {
           <View style={styles.webPhoneScreen}>{appContent}</View>
         </View>
         <Text style={[styles.webDeviceBadge, { color: colors.textMuted }]}>
-          📱 MedSys Mobile • Demostración Interactiva ({theme === 'light' ? '☀️ Modo Claro' : '🌙 Modo Oscuro'})
+          MedSys Mobile • Sistema Clínico ({theme === 'light' ? 'Modo Claro' : 'Modo Oscuro'})
         </Text>
       </View>
     );

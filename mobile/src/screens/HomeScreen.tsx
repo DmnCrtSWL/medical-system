@@ -246,9 +246,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </View>
               <View>
                 <Text style={[styles.brandTitle, { color: colors.textPrimary }]}>MedSys Mobile</Text>
-                <Text style={[styles.brandSubtitle, { color: colors.textSecondary }]}>
-                  App de Consultorio para Médicos
-                </Text>
               </View>
             </View>
 
@@ -403,18 +400,37 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
         {/* Acción 2: Historial de Pacientes */}
         <TouchableOpacity
-          style={styles.actionCard}
+          style={[
+            styles.actionCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.cardBorder,
+              shadowColor: colors.shadowColor,
+            },
+          ]}
           onPress={onNavigateToPatients}
           activeOpacity={0.8}
         >
-          <View style={[styles.actionIconContainer, { backgroundColor: 'rgba(52, 211, 153, 0.15)' }]}>
-            <Users size={24} color="#34D399" />
+          <View
+            style={[
+              styles.actionIconContainer,
+              {
+                backgroundColor: colors.primaryLight,
+                borderColor: colors.primaryBorder,
+              },
+            ]}
+          >
+            <Users size={24} color={colors.primary} />
           </View>
           <View style={styles.actionTextContainer}>
-            <Text style={styles.actionTitle}>Historial de Pacientes</Text>
-            <Text style={styles.actionDescription}>Consulta expedientes clínicos e historial de visitas</Text>
+            <Text style={[styles.actionTitle, { color: colors.textPrimary }]}>
+              Historial de Pacientes
+            </Text>
+            <Text style={[styles.actionDescription, { color: colors.textSecondary }]}>
+              Consulta expedientes clínicos e historial de visitas
+            </Text>
           </View>
-          <ChevronRight size={20} color="#64748B" />
+          <ChevronRight size={20} color={colors.textMuted} />
         </TouchableOpacity>
 
         {/* Acción 3: Cola de Sincronización */}

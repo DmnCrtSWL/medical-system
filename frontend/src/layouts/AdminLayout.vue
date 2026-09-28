@@ -4,12 +4,12 @@ import Header from '../components/layout/Header.vue';
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 flex h-screen overflow-hidden font-sans">
+  <div class="min-h-screen bg-background text-foreground flex h-screen overflow-hidden font-sans">
     <!-- Sidebar (Left) -->
     <Sidebar class="hidden md:flex" />
 
     <!-- Main Wrapper (Right) -->
-    <div class="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
+    <div class="flex-1 flex flex-col h-screen overflow-hidden bg-background text-foreground">
       <!-- Top Header -->
       <Header />
 

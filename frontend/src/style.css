@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-mint-50: #F0FDF4;
   --color-mint-100: #DCFCE7;
@@ -13,6 +15,10 @@
   --color-navy-900: #0A2540;
 
   --color-background: var(--background);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
   --color-foreground: var(--foreground);
 
   --color-primary: var(--primary);
@@ -33,6 +39,10 @@
   :root {
     --background: #F8FAFC;
     --foreground: #0F172A;
+    --card: #FFFFFF;
+    --card-foreground: #0F172A;
+    --muted: #F1F5F9;
+    --muted-foreground: #64748B;
 
     --primary: #10B981;
     --primary-foreground: #FFFFFF;
@@ -47,6 +57,10 @@
   .dark {
     --background: #0F172A;
     --foreground: #F8FAFC;
+    --card: #1E293B;
+    --card-foreground: #F8FAFC;
+    --muted: #0F172A;
+    --muted-foreground: #94A3B8;
 
     --primary: #10B981;
     --primary-foreground: #FFFFFF;

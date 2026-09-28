@@ -14,11 +14,17 @@ const router = createRouter({
     {
       path: '/',
       component: AdminLayout,
+      meta: { requiresAuth: true },
       children: [
         {
           path: '',
           name: 'home',
           component: HomeView,
+        },
+        {
+          path: 'analytics',
+          name: 'analytics',
+          component: () => import('../views/HealthAnalyticsView.vue'),
         },
         {
           path: 'companies',
@@ -31,6 +37,21 @@ const router = createRouter({
           component: () => import('../views/DoctorsView.vue'),
         },
         {
+          path: 'patients',
+          name: 'patients',
+          component: () => import('../views/PatientsView.vue'),
+        },
+        {
+          path: 'patients/:id',
+          name: 'patient-profile',
+          component: () => import('../views/PatientProfileView.vue'),
+        },
+        {
+          path: 'users',
+          name: 'users',
+          component: () => import('../views/UsersView.vue'),
+        },
+        {
           path: 'contracts',
           name: 'contracts',
           component: () => import('../views/ContractsView.vue'),
@@ -40,11 +61,6 @@ const router = createRouter({
           name: 'finance',
           component: () => import('../views/FinanceView.vue'),
         },
-        {
-          path: 'analytics',
-          name: 'analytics',
-          component: () => import('../views/HealthAnalyticsView.vue'),
-        },
       ],
     },
   ],
@@ -53,10 +69,12 @@ const router = createRouter({
 // Guard de Navegacion: Redirigir a /login si intenta acceder a rutas protegidas sin token JWT
 router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token');
-  const protectedRoutes = ['companies', 'doctors', 'contracts', 'finance', 'analytics'];
-  
-  if (protectedRoutes.includes(to.name as string) && !token) {
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
+
+  if (requiresAuth && !token) {
     next({ name: 'login' });
+  } else if (to.name === 'login' && token) {
+    next({ name: 'home' });
   } else {
     next();
   }

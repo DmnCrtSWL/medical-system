@@ -14,6 +14,7 @@ const router = createRouter({
     {
       path: '/',
       component: AdminLayout,
+      meta: { requiresAuth: true },
       children: [
         {
           path: '',
@@ -50,13 +51,15 @@ const router = createRouter({
   ],
 });
 
-// Guard de Navegacion: Redirigir a /login si intenta acceder a rutas protegidas sin token JWT
+// Guard de Navegacion: Proteger rutas administrativas con JWT y prevenir re-login
 router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token');
-  const protectedRoutes = ['companies', 'doctors', 'contracts', 'finance', 'analytics'];
-  
-  if (protectedRoutes.includes(to.name as string) && !token) {
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
+
+  if (requiresAuth && !token) {
     next({ name: 'login' });
+  } else if (to.name === 'login' && token) {
+    next({ name: 'home' });
   } else {
     next();
   }

@@ -147,17 +147,17 @@ const categoryLabels: Record<TransactionCategory, string> = {
     <!-- Header -->
     <header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <h2 class="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-3">
+        <h2 class="text-3xl font-extrabold text-foreground transition-colors duration-300 tracking-tight flex items-center gap-3">
           <DollarSign class="w-8 h-8 text-mint-500" />
           Control de Caja & Libro Contable
         </h2>
-        <p class="text-slate-500 mt-1">
+        <p class="text-muted-foreground transition-colors duration-300 mt-1">
           Administración centralizada de ingresos B2B, honorarios de la plantilla médica y gastos operativos.
         </p>
       </div>
 
       <Button
-        class="bg-mint-500 hover:bg-mint-600 text-navy-900 font-bold px-5 py-2.5 rounded-2xl shadow-lg shadow-mint-500/20 flex items-center gap-2 cursor-pointer transition-all shrink-0"
+        class="bg-mint-500 hover:bg-mint-600 text-foreground transition-colors duration-300 font-bold px-5 py-2.5 rounded-2xl shadow-lg shadow-mint-500/20 flex items-center gap-2 cursor-pointer transition-all shrink-0"
         @click="openCreateModal"
       >
         <PlusCircle class="w-5 h-5" />
@@ -173,14 +173,14 @@ const categoryLabels: Record<TransactionCategory, string> = {
     <!-- Stats Grid (4 Tarjetas de Métricas) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
       <!-- Ingresos Totales -->
-      <Card class="border-none shadow-md bg-white rounded-2xl">
+      <Card class="border-none shadow-md bg-card transition-colors duration-300 rounded-2xl">
         <CardContent class="p-6 flex items-center gap-4">
           <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
             <TrendingUp class="w-7 h-7" />
           </div>
           <div>
             <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Ingresos Totales</p>
-            <h3 class="text-2xl font-black text-slate-800 mt-1">
+            <h3 class="text-2xl font-black text-foreground transition-colors duration-300 mt-1">
               {{ formatCurrency(financeStore.summary?.totalIncome) }}
             </h3>
           </div>
@@ -188,14 +188,14 @@ const categoryLabels: Record<TransactionCategory, string> = {
       </Card>
 
       <!-- Honorarios Médicos -->
-      <Card class="border-none shadow-md bg-white rounded-2xl">
+      <Card class="border-none shadow-md bg-card transition-colors duration-300 rounded-2xl">
         <CardContent class="p-6 flex items-center gap-4">
           <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
             <Stethoscope class="w-7 h-7" />
           </div>
           <div>
             <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Honorarios Médicos</p>
-            <h3 class="text-2xl font-black text-slate-800 mt-1">
+            <h3 class="text-2xl font-black text-foreground transition-colors duration-300 mt-1">
               {{ formatCurrency(financeStore.summary?.totalHonoraria) }}
             </h3>
           </div>
@@ -203,14 +203,14 @@ const categoryLabels: Record<TransactionCategory, string> = {
       </Card>
 
       <!-- Gastos Operativos -->
-      <Card class="border-none shadow-md bg-white rounded-2xl">
+      <Card class="border-none shadow-md bg-card transition-colors duration-300 rounded-2xl">
         <CardContent class="p-6 flex items-center gap-4">
           <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
             <TrendingDown class="w-7 h-7" />
           </div>
           <div>
             <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Gastos Operativos</p>
-            <h3 class="text-2xl font-black text-slate-800 mt-1">
+            <h3 class="text-2xl font-black text-foreground transition-colors duration-300 mt-1">
               {{ formatCurrency(financeStore.summary?.totalExpenses) }}
             </h3>
           </div>
@@ -235,7 +235,7 @@ const categoryLabels: Record<TransactionCategory, string> = {
     </div>
 
     <!-- Filters & Search Bar -->
-    <Card class="border border-slate-200 shadow-sm bg-white rounded-2xl">
+    <Card class="border border-border shadow-sm bg-card transition-colors duration-300 rounded-2xl">
       <CardContent class="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
         <!-- Search Input -->
         <div class="relative w-full md:w-96">
@@ -244,7 +244,7 @@ const categoryLabels: Record<TransactionCategory, string> = {
             v-model="searchQuery"
             type="text"
             placeholder="Buscar por concepto, empresa o doctor..."
-            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mint-500/50 text-slate-800"
+            class="w-full pl-10 pr-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mint-500/50 text-foreground transition-colors duration-300"
           />
         </div>
 
@@ -254,42 +254,42 @@ const categoryLabels: Record<TransactionCategory, string> = {
             <Filter class="w-4 h-4 text-slate-400" />
             <select
               v-model="filterType"
-              class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-mint-500"
+              class="bg-muted dark:bg-card border border-border text-foreground text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-mint-500"
             >
-              <option value="">Todos los Tipos</option>
-              <option value="INCOME">Ingresos</option>
-              <option value="HONORARIUM">Honorarios Médicos</option>
-              <option value="EXPENSE">Gastos Operativos</option>
+              <option value="" class="bg-card text-foreground">Todos los Tipos</option>
+              <option value="INCOME" class="bg-card text-foreground">Ingresos</option>
+              <option value="HONORARIUM" class="bg-card text-foreground">Honorarios Médicos</option>
+              <option value="EXPENSE" class="bg-card text-foreground">Gastos Operativos</option>
             </select>
           </div>
 
           <select
             v-model="filterCategory"
-            class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-mint-500"
+            class="bg-muted dark:bg-card border border-border text-foreground text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-mint-500"
           >
-            <option value="">Todas las Categorías</option>
-            <option value="B2B_CONTRACT">Contratos B2B</option>
-            <option value="DOCTOR_HONORARIUM">Honorarios Médicos</option>
-            <option value="CONSULTATION_FEE">Cobro de Consultas</option>
-            <option value="EQUIPMENT_MAINTENANCE">Mantenimiento & Equipo</option>
-            <option value="OTHER">Otros Movimientos</option>
+            <option value="" class="bg-card text-foreground">Todas las Categorías</option>
+            <option value="B2B_CONTRACT" class="bg-card text-foreground">Contratos B2B</option>
+            <option value="DOCTOR_HONORARIUM" class="bg-card text-foreground">Honorarios Médicos</option>
+            <option value="CONSULTATION_FEE" class="bg-card text-foreground">Cobro de Consultas</option>
+            <option value="EQUIPMENT_MAINTENANCE" class="bg-card text-foreground">Mantenimiento & Equipo</option>
+            <option value="OTHER" class="bg-card text-foreground">Otros Movimientos</option>
           </select>
         </div>
       </CardContent>
     </Card>
 
     <!-- Table of Transactions -->
-    <Card class="border border-slate-200 shadow-sm bg-white rounded-2xl overflow-hidden">
-      <CardHeader class="p-6 border-b border-slate-100 flex flex-row items-center justify-between">
+    <Card class="border border-border shadow-sm bg-card transition-colors duration-300 rounded-2xl overflow-hidden">
+      <CardHeader class="p-6 border-b border-border flex flex-row items-center justify-between">
         <div>
-          <CardTitle class="text-lg font-bold text-slate-800">Historial de Movimientos Contables</CardTitle>
-          <p class="text-xs text-slate-500 mt-0.5">Mostrando {{ filteredTransactions.length }} registros contables</p>
+          <CardTitle class="text-lg font-bold text-foreground transition-colors duration-300">Historial de Movimientos Contables</CardTitle>
+          <p class="text-xs text-muted-foreground transition-colors duration-300 mt-0.5">Mostrando {{ filteredTransactions.length }} registros contables</p>
         </div>
       </CardHeader>
 
       <CardContent class="p-0 overflow-x-auto">
-        <table class="w-full text-left text-sm text-slate-600">
-          <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-400 font-semibold border-b border-slate-100">
+        <table class="w-full text-left text-sm text-muted-foreground transition-colors duration-300">
+          <thead class="bg-muted text-xs uppercase tracking-wider text-slate-400 font-semibold border-b border-border">
             <tr>
               <th class="py-3.5 px-6">Fecha</th>
               <th class="py-3.5 px-6">Concepto</th>
@@ -300,16 +300,16 @@ const categoryLabels: Record<TransactionCategory, string> = {
               <th class="py-3.5 px-6 text-center">Acciones</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <tbody class="divide-y divide-slate-100 dark:divide-black">
             <tr v-if="filteredTransactions.length === 0">
               <td colspan="7" class="py-12 text-center text-slate-400">
                 No hay movimientos registrados que coincidan con la búsqueda.
               </td>
             </tr>
 
-            <tr v-for="tx in filteredTransactions" :key="tx.id" class="hover:bg-slate-50/80 transition-colors">
+            <tr v-for="tx in filteredTransactions" :key="tx.id" class="hover:bg-muted/80 transition-colors">
               <!-- Fecha -->
-              <td class="py-4 px-6 font-medium text-slate-500 whitespace-nowrap">
+              <td class="py-4 px-6 font-medium text-muted-foreground transition-colors duration-300 whitespace-nowrap">
                 <div class="flex items-center gap-2">
                   <Calendar class="w-4 h-4 text-slate-400" />
                   {{ formatDate(tx.date) }}
@@ -317,24 +317,24 @@ const categoryLabels: Record<TransactionCategory, string> = {
               </td>
 
               <!-- Concepto -->
-              <td class="py-4 px-6 font-bold text-slate-800">
+              <td class="py-4 px-6 font-bold text-foreground transition-colors duration-300">
                 {{ tx.description }}
               </td>
 
               <!-- Categoría -->
               <td class="py-4 px-6 whitespace-nowrap">
-                <span class="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-xs font-semibold border border-slate-200">
+                <span class="bg-muted/80 text-muted-foreground transition-colors duration-300 px-2.5 py-1 rounded-lg text-xs font-semibold border border-border">
                   {{ categoryLabels[tx.category] || tx.category }}
                 </span>
               </td>
 
               <!-- Entidad Asociada (Empresa o Doctor) -->
               <td class="py-4 px-6 whitespace-nowrap">
-                <div v-if="tx.company" class="flex items-center gap-1.5 text-xs text-navy-800 font-semibold">
+                <div v-if="tx.company" class="flex items-center gap-1.5 text-xs text-foreground font-semibold">
                   <Building2 class="w-3.5 h-3.5 text-mint-600 shrink-0" />
                   {{ tx.company.name }}
                 </div>
-                <div v-else-if="tx.doctor" class="flex items-center gap-1.5 text-xs text-slate-700 font-medium">
+                <div v-else-if="tx.doctor" class="flex items-center gap-1.5 text-xs text-foreground font-medium">
                   <Stethoscope class="w-3.5 h-3.5 text-blue-500 shrink-0" />
                   {{ tx.doctor.user?.name || 'Doctor' }}
                 </div>
@@ -394,19 +394,19 @@ const categoryLabels: Record<TransactionCategory, string> = {
       v-if="showModal"
       class="fixed inset-0 z-50 bg-navy-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
     >
-      <div class="bg-white rounded-3xl max-w-lg w-full p-6 md:p-8 shadow-2xl border border-slate-200 space-y-6 animate-in fade-in zoom-in duration-200">
+      <div class="bg-card transition-colors duration-300 rounded-3xl max-w-lg w-full p-6 md:p-8 shadow-2xl border border-border space-y-6 animate-in fade-in zoom-in duration-200">
         <!-- Modal Header -->
-        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div class="flex items-center justify-between border-b border-border pb-4">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-2xl bg-mint-100 text-mint-600 flex items-center justify-center">
               <PlusCircle class="w-6 h-6" />
             </div>
             <div>
-              <h3 class="text-xl font-extrabold text-slate-800">Registrar Movimiento Contable</h3>
-              <p class="text-xs text-slate-500">Ingresa la información financiera de la transacción.</p>
+              <h3 class="text-xl font-extrabold text-foreground transition-colors duration-300">Registrar Movimiento Contable</h3>
+              <p class="text-xs text-muted-foreground transition-colors duration-300">Ingresa la información financiera de la transacción.</p>
             </div>
           </div>
-          <button class="p-2 text-slate-400 hover:text-slate-600 rounded-xl cursor-pointer" @click="showModal = false">
+          <button class="p-2 text-slate-400 hover:text-muted-foreground transition-colors duration-300 rounded-xl cursor-pointer" @click="showModal = false">
             <X class="w-5 h-5" />
           </button>
         </div>
@@ -415,20 +415,20 @@ const categoryLabels: Record<TransactionCategory, string> = {
         <form class="space-y-4" @submit.prevent="handleCreateTransaction">
           <!-- Concepto -->
           <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Concepto / Descripción *</label>
+            <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors duration-300 mb-1.5">Concepto / Descripción *</label>
             <input
               v-model="form.description"
               type="text"
               required
               placeholder="Ej. Pago Convenio Anual B2B TechCorp"
-              class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mint-500 text-slate-800 font-medium"
+              class="w-full px-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mint-500 text-foreground transition-colors duration-300 font-medium"
             />
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <!-- Monto -->
             <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Monto ($ MXN) *</label>
+              <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors duration-300 mb-1.5">Monto ($ MXN) *</label>
               <input
                 v-model.number="form.amount"
                 type="number"
@@ -436,18 +436,18 @@ const categoryLabels: Record<TransactionCategory, string> = {
                 min="0.01"
                 required
                 placeholder="150000"
-                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mint-500 text-slate-800 font-bold"
+                class="w-full px-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mint-500 text-foreground transition-colors duration-300 font-bold"
               />
             </div>
 
             <!-- Fecha -->
             <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Fecha *</label>
+              <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors duration-300 mb-1.5">Fecha *</label>
               <input
                 v-model="form.date"
                 type="date"
                 required
-                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mint-500 text-slate-800"
+                class="w-full px-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mint-500 text-foreground transition-colors duration-300"
               />
             </div>
           </div>
@@ -455,10 +455,10 @@ const categoryLabels: Record<TransactionCategory, string> = {
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <!-- Tipo de Movimiento -->
             <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Tipo de Movimiento *</label>
+              <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors duration-300 mb-1.5">Tipo de Movimiento *</label>
               <select
                 v-model="form.type"
-                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mint-500 text-slate-800 font-semibold"
+                class="w-full px-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mint-500 text-foreground transition-colors duration-300 font-semibold"
               >
                 <option value="INCOME">🟢 Ingreso</option>
                 <option value="HONORARIUM">🔵 Honorario Médico</option>
@@ -468,10 +468,10 @@ const categoryLabels: Record<TransactionCategory, string> = {
 
             <!-- Categoría -->
             <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Categoría *</label>
+              <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors duration-300 mb-1.5">Categoría *</label>
               <select
                 v-model="form.category"
-                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mint-500 text-slate-800"
+                class="w-full px-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mint-500 text-foreground transition-colors duration-300"
               >
                 <option value="B2B_CONTRACT">Contrato B2B</option>
                 <option value="DOCTOR_HONORARIUM">Honorarios Médicos</option>
@@ -484,10 +484,10 @@ const categoryLabels: Record<TransactionCategory, string> = {
 
           <!-- Empresa B2B Opcional -->
           <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Empresa Cliente B2B (Opcional)</label>
+            <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors duration-300 mb-1.5">Empresa Cliente B2B (Opcional)</label>
             <select
               v-model="form.companyId"
-              class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mint-500 text-slate-800"
+              class="w-full px-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mint-500 text-foreground transition-colors duration-300"
             >
               <option value="">Ninguna empresa asociada</option>
               <option v-for="c in companiesStore.companies" :key="c.id" :value="c.id">
@@ -498,10 +498,10 @@ const categoryLabels: Record<TransactionCategory, string> = {
 
           <!-- Doctor Opcional -->
           <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Doctor In-House (Opcional)</label>
+            <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors duration-300 mb-1.5">Doctor In-House (Opcional)</label>
             <select
               v-model="form.doctorId"
-              class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mint-500 text-slate-800"
+              class="w-full px-4 py-2.5 bg-muted border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-mint-500 text-foreground transition-colors duration-300"
             >
               <option value="">Ningún doctor asociado</option>
               <option v-for="d in doctorsStore.doctors" :key="d.id" :value="d.id">
@@ -511,18 +511,18 @@ const categoryLabels: Record<TransactionCategory, string> = {
           </div>
 
           <!-- Modal Actions -->
-          <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+          <div class="flex items-center justify-end gap-3 pt-4 border-t border-border">
             <Button
               type="button"
               variant="outline"
-              class="border-slate-200 text-slate-600 rounded-xl cursor-pointer"
+              class="border-border text-muted-foreground transition-colors duration-300 rounded-xl cursor-pointer"
               @click="showModal = false"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
-              class="bg-mint-500 hover:bg-mint-600 text-navy-900 font-bold px-5 rounded-xl shadow-md cursor-pointer"
+              class="bg-mint-500 hover:bg-mint-600 text-foreground transition-colors duration-300 font-bold px-5 rounded-xl shadow-md cursor-pointer"
               :disabled="financeStore.loading"
             >
               {{ financeStore.loading ? 'Guardando...' : 'Guardar Transacción' }}

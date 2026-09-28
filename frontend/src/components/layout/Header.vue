@@ -23,7 +23,7 @@ const handleLogout = () => {
       <div class="flex items-center gap-3 pl-2">
         <div class="text-right hidden sm:block">
           <p class="text-sm font-bold text-navy-900 leading-none mb-1">{{ authStore.user?.name || 'Panel de Control' }}</p>
-          <p class="text-[11px] text-mint-600 font-bold leading-none tracking-wide">{{ authStore.user?.role?.toUpperCase() === 'ADMIN' ? 'ADMINISTRADOR' : 'STAFF' }}</p>
+          <p class="text-[11px] text-mint-600 font-bold leading-none tracking-wide">{{ authStore.user?.role?.toUpperCase() === 'ADMIN' ? 'ADMINISTRADOR' : 'OPERATIVO' }}</p>
         </div>
         <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-mint-400 to-blue-500 flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-slate-50">
           {{ authStore.user?.name?.charAt(0) || 'A' }}

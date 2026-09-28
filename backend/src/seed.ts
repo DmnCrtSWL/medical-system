@@ -63,6 +63,23 @@ async function main() {
   });
   console.log(`✅ Usuario Administrador listo: ${adminUser.email}`);
 
+  const operativePasswordHash = await bcrypt.hash('Operativo123!', 10);
+  const operativeUser = await prisma.user.upsert({
+    where: { email: 'operativo@medical.com' },
+    update: {
+      name: 'Operador MedSys',
+      role: Role.OPERATIVE,
+      password: operativePasswordHash,
+    },
+    create: {
+      email: 'operativo@medical.com',
+      name: 'Operador MedSys',
+      role: Role.OPERATIVE,
+      password: operativePasswordHash,
+    },
+  });
+  console.log(`✅ Usuario Operativo listo: ${operativeUser.email}`);
+
   const doctorUser = await prisma.user.upsert({
     where: { email: 'yay@medical.com' },
     update: {

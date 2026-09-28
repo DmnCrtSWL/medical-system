@@ -27,9 +27,10 @@ const handleLogin = async () => {
 
   try {
     const loggedUser = await authStore.loginUser(email.value, password.value);
-    if (loggedUser.role?.toUpperCase() !== 'ADMIN') {
+    const userRole = loggedUser.role?.toUpperCase();
+    if (userRole !== 'ADMIN' && userRole !== 'OPERATIVE' && userRole !== 'STAFF') {
       authStore.logout();
-      errorMessage.value = 'Acceso restringido. Este portal web es exclusivo para Administradores (los médicos deben utilizar la app móvil).';
+      errorMessage.value = 'Acceso restringido. Este portal web es para personal Administrativo y Operativo (los médicos deben utilizar la app móvil).';
       return;
     }
     router.push('/');

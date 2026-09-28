@@ -66,7 +66,7 @@ const router = createRouter({
   ],
 });
 
-// Guard de Navegacion: Redirigir a /login si intenta acceder a rutas protegidas sin token JWT
+// Guard de Navegacion: Proteger rutas administrativas con JWT y prevenir re-login
 router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token');
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);

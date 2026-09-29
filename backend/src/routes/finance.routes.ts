@@ -7,12 +7,13 @@ import {
   deleteTransaction,
   getFinancialSummary,
 } from '../controllers/finance.controller';
-import { authenticateToken } from '../middlewares/auth.middleware';
+import { authenticateToken, authorizeRole } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-// Todas las rutas financieras estan protegidas por autenticacion JWT
+// Todas las rutas financieras estan protegidas por autenticacion JWT y exclusivas para ADMIN
 router.use(authenticateToken);
+router.use(authorizeRole(['ADMIN']));
 
 router.get('/summary', getFinancialSummary);
 router.get('/', getTransactions);

@@ -22,6 +22,11 @@ const router = createRouter({
           component: HomeView,
         },
         {
+          path: 'analytics',
+          name: 'analytics',
+          component: () => import('../views/HealthAnalyticsView.vue'),
+        },
+        {
           path: 'companies',
           name: 'companies',
           component: () => import('../views/CompaniesView.vue'),
@@ -30,6 +35,21 @@ const router = createRouter({
           path: 'doctors',
           name: 'doctors',
           component: () => import('../views/DoctorsView.vue'),
+        },
+        {
+          path: 'patients',
+          name: 'patients',
+          component: () => import('../views/PatientsView.vue'),
+        },
+        {
+          path: 'patients/:id',
+          name: 'patient-profile',
+          component: () => import('../views/PatientProfileView.vue'),
+        },
+        {
+          path: 'users',
+          name: 'users',
+          component: () => import('../views/UsersView.vue'),
         },
         {
           path: 'contracts',
@@ -42,11 +62,6 @@ const router = createRouter({
           name: 'finance',
           component: () => import('../views/FinanceView.vue'),
           meta: { roles: ['ADMIN'] },
-        },
-        {
-          path: 'analytics',
-          name: 'analytics',
-          component: () => import('../views/HealthAnalyticsView.vue'),
         },
       ],
     },

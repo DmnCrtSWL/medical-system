@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router';
-import { Building2, FileText, TrendingUp, Stethoscope, DollarSign, Activity } from 'lucide-vue-next';
+import { Building2, FileText, TrendingUp, Stethoscope, DollarSign, Activity, UserCheck, Users } from 'lucide-vue-next';
 import { useAuthStore } from '../../stores/auth';
 import { computed } from 'vue';
 
@@ -25,13 +25,19 @@ const isAdmin = computed(() => authStore.user?.role?.toUpperCase() === 'ADMIN');
           <TrendingUp class="w-4 h-4" /> Panel Principal
         </RouterLink>
         <RouterLink to="/analytics" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm" :class="[route.path === '/analytics' ? 'bg-mint-500/15 text-mint-400 shadow-inner' : 'text-slate-400 hover:bg-navy-800 hover:text-white']">
-          <Activity class="w-4 h-4" /> Analíticas B2B
+          <Activity class="w-4 h-4" /> Estadísticas
         </RouterLink>
-        <RouterLink to="/companies" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm" :class="[route.path === '/companies' ? 'bg-mint-500/15 text-mint-400 shadow-inner' : 'text-slate-400 hover:bg-navy-800 hover:text-white']">
-          <Building2 class="w-4 h-4" /> Empresas B2B
+        <RouterLink to="/users" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm" :class="[route.path === '/users' ? 'bg-mint-500/15 text-mint-400 shadow-inner' : 'text-slate-400 hover:bg-navy-800 hover:text-white']">
+          <Users class="w-4 h-4" /> Usuarios
         </RouterLink>
         <RouterLink to="/doctors" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm" :class="[route.path === '/doctors' ? 'bg-mint-500/15 text-mint-400 shadow-inner' : 'text-slate-400 hover:bg-navy-800 hover:text-white']">
-          <Stethoscope class="w-4 h-4" /> Doctores
+          <Stethoscope class="w-4 h-4" /> Médicos
+        </RouterLink>
+        <RouterLink to="/companies" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm" :class="[route.path === '/companies' ? 'bg-mint-500/15 text-mint-400 shadow-inner' : 'text-slate-400 hover:bg-navy-800 hover:text-white']">
+          <Building2 class="w-4 h-4" /> Empresas
+        </RouterLink>
+        <RouterLink to="/patients" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm" :class="[route.path.startsWith('/patients') ? 'bg-mint-500/15 text-mint-400 shadow-inner' : 'text-slate-400 hover:bg-navy-800 hover:text-white']">
+          <UserCheck class="w-4 h-4" /> Pacientes
         </RouterLink>
         <RouterLink v-if="isAdmin" to="/contracts" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm" :class="[route.path === '/contracts' ? 'bg-mint-500/15 text-mint-400 shadow-inner' : 'text-slate-400 hover:bg-navy-800 hover:text-white']">
           <FileText class="w-4 h-4" /> Contratos

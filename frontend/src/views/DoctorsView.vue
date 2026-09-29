@@ -258,9 +258,8 @@ const getFileUrl = (url: string | null | undefined) => {
 </script>
 
 <template>
-  <div class="p-6 md:p-10">
-    <div class="max-w-6xl mx-auto space-y-6">
-      <!-- Top Bar / Action Bar -->
+  <div class="space-y-6">
+    <!-- Top Bar / Action Bar -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center gap-3">
           <Button
@@ -330,40 +329,39 @@ const getFileUrl = (url: string | null | undefined) => {
           </div>
 
           <!-- Table -->
-          <div v-else class="overflow-x-auto">
+          <div v-else class="w-full">
             <table class="w-full text-left text-sm text-muted-foreground">
               <thead class="bg-muted text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border">
                 <tr>
-                  <th class="px-6 py-4">Médico / Contacto</th>
-                  <th class="px-6 py-4">Especialidad & Universidad</th>
-                  <th class="px-6 py-4">Cédula Profesional</th>
-                  <th class="px-6 py-4">Testigo Cédula</th>
-                  <th class="px-6 py-4">Empresa B2B</th>
-                  <th class="px-6 py-4">Fecha Registro</th>
-                  <th class="px-6 py-4 text-right">Acciones</th>
+                  <th class="px-4 py-3.5 font-bold">Médico / Contacto</th>
+                  <th class="px-4 py-3.5 font-bold">Especialidad & Universidad</th>
+                  <th class="px-4 py-3.5 font-bold">Cédula & Testigo</th>
+                  <th class="px-4 py-3.5 font-bold">Empresa B2B</th>
+                  <th class="px-4 py-3.5 font-bold">Fecha Registro</th>
+                  <th class="px-4 py-3.5 font-bold text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-100 dark:divide-black">
+              <tbody class="divide-y divide-slate-100 dark:divide-black font-medium">
                 <tr v-for="doctor in doctorStore.doctors" :key="doctor.id" class="hover:bg-muted/60 transition-colors">
-                  <td class="px-6 py-4">
+                  <td class="px-4 py-3.5">
                     <div class="flex items-center gap-3">
-                      <div class="w-9 h-9 rounded-xl bg-mint-100 dark:bg-mint-950 text-mint-600 flex items-center justify-center font-bold text-sm">
+                      <div class="w-9 h-9 rounded-xl bg-mint-100 dark:bg-mint-950 text-mint-600 flex items-center justify-center font-bold text-sm shrink-0">
                         {{ doctor.user.name.charAt(0).toUpperCase() }}
                       </div>
-                      <div>
-                        <p class="font-semibold text-foreground">{{ doctor.user.name }}</p>
-                        <p class="text-xs text-muted-foreground flex items-center gap-1">
-                          <Mail class="w-3 h-3 text-slate-400" />
+                      <div class="min-w-0">
+                        <p class="font-bold text-foreground truncate">{{ doctor.user.name }}</p>
+                        <p class="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                          <Mail class="w-3 h-3 text-slate-400 shrink-0" />
                           {{ doctor.user.email }}
                         </p>
                         <p v-if="doctor.phone" class="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <Phone class="w-3 h-3 text-slate-400" />
+                          <Phone class="w-3 h-3 text-slate-400 shrink-0" />
                           {{ doctor.phone }}
                         </p>
                       </div>
                     </div>
                   </td>
-                  <td class="px-6 py-4 space-y-1">
+                  <td class="px-4 py-3.5 space-y-1">
                     <span class="inline-flex items-center gap-1 bg-mint-500/10 text-mint-600 px-2.5 py-0.5 rounded-lg text-xs font-semibold border border-mint-500/20">
                       {{ doctor.specialty }}
                     </span>
@@ -372,41 +370,40 @@ const getFileUrl = (url: string | null | undefined) => {
                       <span>{{ doctor.university }}</span>
                     </div>
                   </td>
-                  <td class="px-6 py-4">
+                  <td class="px-4 py-3.5 space-y-1">
                     <div v-if="doctor.licenseId" class="text-xs font-mono font-semibold text-foreground flex items-center gap-1">
                       <Award class="w-3.5 h-3.5 text-slate-400" />
                       {{ doctor.licenseId }}
                     </div>
-                    <span v-else class="text-xs text-muted-foreground italic">Sin cédula</span>
+                    <div v-if="doctor.licenseFileUrl">
+                      <a
+                        :href="getFileUrl(doctor.licenseFileUrl)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-1 px-2.5 py-0.5 bg-mint-500/10 hover:bg-mint-500/20 text-mint-700 dark:text-mint-300 border border-mint-500/30 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                        title="Ver o descargar comprobante"
+                      >
+                        <FileCheck class="w-3 h-3 text-mint-600" />
+                        Ver Testigo
+                      </a>
+                    </div>
+                    <span v-else-if="!doctor.licenseId" class="text-xs text-muted-foreground italic">Sin cédula</span>
+                    <span v-else class="text-[11px] text-slate-400 italic block">Sin testigo</span>
                   </td>
-                  <td class="px-6 py-4">
-                    <a
-                      v-if="doctor.licenseFileUrl"
-                      :href="getFileUrl(doctor.licenseFileUrl)"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="inline-flex items-center gap-1.5 px-3 py-1 bg-mint-500/10 hover:bg-mint-500/20 text-mint-700 dark:text-mint-300 border border-mint-500/30 rounded-xl text-xs font-bold transition-colors cursor-pointer"
-                      title="Ver o descargar comprobante de cédula"
-                    >
-                      <FileCheck class="w-3.5 h-3.5 text-mint-600" />
-                      Ver Testigo
-                    </a>
-                    <span v-else class="text-xs text-slate-400 italic">No adjuntado</span>
-                  </td>
-                  <td class="px-6 py-4">
-                    <div v-if="doctor.company" class="flex items-center gap-1.5 text-xs text-foreground bg-muted/80 px-2.5 py-1.5 rounded-xl border border-border">
-                      <Building2 class="w-4 h-4 text-mint-500 shrink-0" />
+                  <td class="px-4 py-3.5">
+                    <div v-if="doctor.company" class="inline-flex items-center gap-1.5 text-xs text-foreground bg-muted/80 px-2.5 py-1 rounded-xl border border-border">
+                      <Building2 class="w-3.5 h-3.5 text-mint-500 shrink-0" />
                       <span class="font-medium">{{ doctor.company.name }}</span>
                     </div>
                     <span v-else class="text-xs text-slate-400 italic flex items-center gap-1">
                       <Building2 class="w-3.5 h-3.5 text-slate-300" />
-                      Sin asignar (General)
+                      Sin asignar
                     </span>
                   </td>
-                  <td class="px-6 py-4 text-xs text-muted-foreground">
+                  <td class="px-4 py-3.5 text-xs text-muted-foreground whitespace-nowrap">
                     {{ new Date(doctor.createdAt).toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' }) }}
                   </td>
-                  <td class="px-6 py-4 text-right">
+                  <td class="px-4 py-3.5 text-right whitespace-nowrap">
                     <div class="flex items-center justify-end gap-1">
                       <Button
                         variant="ghost"
@@ -432,7 +429,6 @@ const getFileUrl = (url: string | null | undefined) => {
           </div>
         </CardContent>
       </Card>
-    </div>
 
     <!-- Modal Form (Nuevo / Editar Doctor) -->
     <div v-if="showModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">

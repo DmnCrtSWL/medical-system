@@ -20,6 +20,18 @@ enum ContractStatus {
   EXPIRED
 }
 
+enum ContractTariff {
+  TARIFF_A
+  TARIFF_B
+  TARIFF_C
+}
+
+enum ContractDuration {
+  MONTHS_6
+  MONTHS_12
+  MONTHS_24
+}
+
 enum TransactionType {
   INCOME
   EXPENSE
@@ -55,13 +67,17 @@ model User {
 }
 
 model Company {
-  id        String   @id @default(uuid())
-  name      String
-  taxId     String?  @unique
-  address   String?
-  phone     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  name                String
+  legalName           String?
+  representativeName  String?
+  representativeTitle String?
+  taxId               String?  @unique
+  address             String?
+  phone               String?
+  email               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   patients      Patient[]
   contracts     Contract[]
@@ -73,17 +89,20 @@ model Company {
 }
 
 model Doctor {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  specialty String   @default("General")
-  licenseId String?
-  phone     String?
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialty      String   @default("General")
+  licenseId      String?
+  university     String?
+  phone          String?
+  licenseFileUrl String?
+  companyId      String?
+  company        Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
+  contracts     Contract[]
   transactions  Transaction[]
   consultations Consultation[]
 
@@ -108,16 +127,20 @@ model Patient {
 }
 
 model Contract {
-  id        String         @id @default(uuid())
+  id        String            @id @default(uuid())
   companyId String
-  company   Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company   Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  doctorId  String?
+  doctor    Doctor?           @relation(fields: [doctorId], references: [id], onDelete: SetNull)
   startDate DateTime
   endDate   DateTime
   amount    Float?
-  status    ContractStatus @default(ACTIVE)
+  tariff    ContractTariff?   @default(TARIFF_A)
+  duration  ContractDuration? @default(MONTHS_12)
+  status    ContractStatus    @default(ACTIVE)
   pdfUrl    String?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 
   @@map("contracts")
 }

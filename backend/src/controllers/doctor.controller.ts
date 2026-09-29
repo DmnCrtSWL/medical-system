@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import prisma from '../config/db';
 import { hashPassword } from '../utils/password';
+import { generateSetPasswordToken } from '../utils/token';
+import { sendSetPasswordEmail } from '../services/email.service';
 
 export const getDoctors = async (_req: Request, res: Response): Promise<void> => {
   try {
@@ -57,15 +60,15 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
 
 export const createDoctor = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, email, password, specialty, licenseId, phone, companyId } = req.body;
+    const { name, email, specialty, licenseId, university, phone, companyId } = req.body;
 
     if (!name || typeof name !== 'string' || name.trim() === '') {
-      res.status(400).json({ message: 'Doctor name is required' });
+      res.status(400).json({ message: 'El nombre completo del médico es obligatorio' });
       return;
     }
 
     if (!email || typeof email !== 'string' || email.trim() === '') {
-      res.status(400).json({ message: 'Doctor email is required' });
+      res.status(400).json({ message: 'El correo electrónico es obligatorio' });
       return;
     }
 
@@ -76,7 +79,7 @@ export const createDoctor = async (req: Request, res: Response): Promise<void> =
     });
 
     if (existingUser?.doctor) {
-      res.status(409).json({ message: 'A doctor profile already exists for this email' });
+      res.status(409).json({ message: 'Ya existe un perfil médico registrado con este correo electrónico' });
       return;
     }
 
@@ -85,10 +88,9 @@ export const createDoctor = async (req: Request, res: Response): Promise<void> =
     if (existingUser) {
       userId = existingUser.id;
     } else {
-      const defaultPassword = password && typeof password === 'string' && password.length >= 6
-        ? password
-        : 'Doctor123!';
-      const hashedPassword = await hashPassword(defaultPassword);
+      // Generar contraseña aleatoria temporal; el médico configurará la suya vía correo
+      const randomPassword = crypto.randomBytes(24).toString('hex');
+      const hashedPassword = await hashPassword(randomPassword);
 
       const newUser = await prisma.user.create({
         data: {
@@ -106,16 +108,26 @@ export const createDoctor = async (req: Request, res: Response): Promise<void> =
         where: { id: companyId },
       });
       if (!companyExists) {
-        res.status(404).json({ message: 'Specified company does not exist' });
+        res.status(404).json({ message: 'La empresa especificada no existe' });
         return;
       }
+    }
+
+    // Determinar la URL o ruta del testigo de cédula
+    let licenseFileUrl: string | null = null;
+    if (req.file) {
+      licenseFileUrl = `/uploads/licenses/${req.file.filename}`;
+    } else if (req.body.licenseFileUrl || req.body.licenseUrl) {
+      licenseFileUrl = String(req.body.licenseFileUrl || req.body.licenseUrl).trim();
     }
 
     const doctor = await prisma.doctor.create({
       data: {
         userId,
-        specialty: specialty && typeof specialty === 'string' ? specialty.trim() : 'General',
+        specialty: specialty && typeof specialty === 'string' ? specialty.trim() : 'Medicina General',
         licenseId: licenseId ? String(licenseId).trim() : null,
+        university: university ? String(university).trim() : null,
+        licenseFileUrl,
         phone: phone ? String(phone).trim() : null,
         companyId: companyId || null,
       },
@@ -132,17 +144,33 @@ export const createDoctor = async (req: Request, res: Response): Promise<void> =
       },
     });
 
-    res.status(201).json({ message: 'Doctor created successfully', doctor });
+    // Disparar flujo de correo de activación de cuenta con token expirable (24 horas)
+    try {
+      const activationToken = generateSetPasswordToken(userId, cleanEmail);
+      await sendSetPasswordEmail({
+        to: cleanEmail,
+        name: name.trim(),
+        token: activationToken,
+        roleOrEntity: 'Médico',
+      });
+    } catch (emailError) {
+      console.error('Error enviando correo de activación al médico:', emailError);
+    }
+
+    res.status(201).json({
+      message: 'Médico dado de alta exitosamente. Se ha enviado el enlace de activación por correo electrónico.',
+      doctor,
+    });
   } catch (error) {
     console.error('Error creating doctor:', error);
-    res.status(500).json({ message: 'Error creating doctor' });
+    res.status(500).json({ message: 'Error interno al registrar al médico' });
   }
 };
 
 export const updateDoctor = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { name, email, specialty, licenseId, phone, companyId } = req.body;
+    const { name, email, specialty, licenseId, university, phone, companyId } = req.body;
 
     const existingDoctor = await prisma.doctor.findUnique({
       where: { id },
@@ -159,7 +187,7 @@ export const updateDoctor = async (req: Request, res: Response): Promise<void> =
         where: { email: email.trim().toLowerCase() },
       });
       if (emailCheck) {
-        res.status(409).json({ message: 'Email is already in use by another user' });
+        res.status(409).json({ message: 'El correo electrónico ya está en uso por otro usuario' });
         return;
       }
     }
@@ -169,7 +197,7 @@ export const updateDoctor = async (req: Request, res: Response): Promise<void> =
         where: { id: companyId },
       });
       if (!companyExists) {
-        res.status(404).json({ message: 'Specified company does not exist' });
+        res.status(404).json({ message: 'La empresa especificada no existe' });
         return;
       }
     }
@@ -184,11 +212,21 @@ export const updateDoctor = async (req: Request, res: Response): Promise<void> =
       });
     }
 
+    let updatedLicenseFileUrl = existingDoctor.licenseFileUrl;
+    if (req.file) {
+      updatedLicenseFileUrl = `/uploads/licenses/${req.file.filename}`;
+    } else if (req.body.licenseFileUrl !== undefined || req.body.licenseUrl !== undefined) {
+      const providedUrl = req.body.licenseFileUrl || req.body.licenseUrl;
+      updatedLicenseFileUrl = providedUrl ? String(providedUrl).trim() : null;
+    }
+
     const updatedDoctor = await prisma.doctor.update({
       where: { id },
       data: {
         specialty: specialty !== undefined ? specialty.trim() : existingDoctor.specialty,
         licenseId: licenseId !== undefined ? (licenseId ? String(licenseId).trim() : null) : existingDoctor.licenseId,
+        university: university !== undefined ? (university ? String(university).trim() : null) : existingDoctor.university,
+        licenseFileUrl: updatedLicenseFileUrl,
         phone: phone !== undefined ? (phone ? String(phone).trim() : null) : existingDoctor.phone,
         companyId: companyId !== undefined ? (companyId || null) : existingDoctor.companyId,
       },
@@ -205,10 +243,10 @@ export const updateDoctor = async (req: Request, res: Response): Promise<void> =
       },
     });
 
-    res.status(200).json({ message: 'Doctor updated successfully', doctor: updatedDoctor });
+    res.status(200).json({ message: 'Médico actualizado exitosamente', doctor: updatedDoctor });
   } catch (error) {
     console.error('Error updating doctor:', error);
-    res.status(500).json({ message: 'Error updating doctor' });
+    res.status(500).json({ message: 'Error interno al actualizar al médico' });
   }
 };
 
@@ -229,9 +267,9 @@ export const deleteDoctor = async (req: Request, res: Response): Promise<void> =
       where: { id },
     });
 
-    res.status(200).json({ message: 'Doctor deleted successfully' });
+    res.status(200).json({ message: 'Médico eliminado exitosamente del sistema' });
   } catch (error) {
     console.error('Error deleting doctor:', error);
-    res.status(500).json({ message: 'Error deleting doctor' });
+    res.status(500).json({ message: 'Error al eliminar al médico' });
   }
 };

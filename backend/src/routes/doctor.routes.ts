@@ -7,6 +7,7 @@ import {
   deleteDoctor,
 } from '../controllers/doctor.controller';
 import { authenticateToken } from '../middlewares/auth.middleware';
+import { uploadLicense } from '../middlewares/upload.middleware';
 
 const router = Router();
 
@@ -15,8 +16,8 @@ router.use(authenticateToken);
 
 router.get('/', getDoctors);
 router.get('/:id', getDoctorById);
-router.post('/', createDoctor);
-router.put('/:id', updateDoctor);
+router.post('/', uploadLicense.single('licenseFile'), createDoctor);
+router.put('/:id', uploadLicense.single('licenseFile'), updateDoctor);
 router.delete('/:id', deleteDoctor);
 
 export default router;

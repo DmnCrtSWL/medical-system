@@ -7,12 +7,13 @@ import {
   updateContract,
   deleteContract,
 } from '../controllers/contract.controller';
-import { authenticateToken } from '../middlewares/auth.middleware';
+import { authenticateToken, authorizeRole } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-// Middleware de Autenticacion JWT para todas las rutas de contratos
+// Middleware de Autenticacion JWT y autorizacion para ADMIN
 router.use(authenticateToken);
+router.use(authorizeRole(['ADMIN']));
 
 router.get('/', getContracts);
 router.get('/:id', getContractById);

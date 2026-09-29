@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router';
 import { Building2, FileText, TrendingUp, Stethoscope, DollarSign, Activity, UserCheck, Users } from 'lucide-vue-next';
+import { useAuthStore } from '../../stores/auth';
+import { computed } from 'vue';
 
 const route = useRoute();
+const authStore = useAuthStore();
+const isAdmin = computed(() => authStore.user?.role?.toUpperCase() === 'ADMIN');
 </script>
 
 <template>
@@ -35,10 +39,10 @@ const route = useRoute();
         <RouterLink to="/patients" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm" :class="[route.path.startsWith('/patients') ? 'bg-mint-500/15 text-mint-400 shadow-inner' : 'text-slate-400 hover:bg-navy-800 hover:text-white']">
           <UserCheck class="w-4 h-4" /> Pacientes
         </RouterLink>
-        <RouterLink to="/contracts" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm" :class="[route.path === '/contracts' ? 'bg-mint-500/15 text-mint-400 shadow-inner' : 'text-slate-400 hover:bg-navy-800 hover:text-white']">
+        <RouterLink v-if="isAdmin" to="/contracts" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm" :class="[route.path === '/contracts' ? 'bg-mint-500/15 text-mint-400 shadow-inner' : 'text-slate-400 hover:bg-navy-800 hover:text-white']">
           <FileText class="w-4 h-4" /> Contratos
         </RouterLink>
-        <RouterLink to="/finance" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm" :class="[route.path === '/finance' ? 'bg-mint-500/15 text-mint-400 shadow-inner' : 'text-slate-400 hover:bg-navy-800 hover:text-white']">
+        <RouterLink v-if="isAdmin" to="/finance" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm" :class="[route.path === '/finance' ? 'bg-mint-500/15 text-mint-400 shadow-inner' : 'text-slate-400 hover:bg-navy-800 hover:text-white']">
           <DollarSign class="w-4 h-4" /> Caja & Finanzas
         </RouterLink>
       </nav>

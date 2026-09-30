@@ -9,6 +9,7 @@ import doctorRoutes from './routes/doctor.routes';
 import contractRoutes from './routes/contract.routes';
 import financeRoutes from './routes/finance.routes';
 import consultationRoutes from './routes/consultation.routes';
+import userRoutes from './routes/user.routes';
 import { logger, morganStream } from './utils/logger';
 
 dotenv.config();
@@ -30,6 +31,7 @@ app.use(express.json());
 
 // Enrutadores Principales
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/contracts', contractRoutes);

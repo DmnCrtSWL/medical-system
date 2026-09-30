@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Users, Search, Plus, Shield, UserCheck, Stethoscope, Briefcase, Mail, Calendar, ArrowLeft } from 'lucide-vue-next';
+import { Users, Search, Plus, Shield, UserCheck, Stethoscope, Briefcase, Mail, Calendar, ArrowLeft, Trash2, CheckCircle2 } from 'lucide-vue-next';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import Button from '../components/ui/Button.vue';
 import Input from '../components/ui/Input.vue';
@@ -22,6 +22,7 @@ const users = ref<SystemUser[]>([]);
 const isLoading = ref(false);
 const searchQuery = ref('');
 const selectedRoleFilter = ref<string>('ALL');
+const successMessage = ref('');
 
 // Modal de Creación
 const showModal = ref(false);
@@ -29,44 +30,19 @@ const isSubmitting = ref(false);
 const formError = ref('');
 const formName = ref('');
 const formEmail = ref('');
-const formPassword = ref('');
 const formRole = ref<'ADMIN' | 'OPERATIVE' | 'DOCTOR'>('OPERATIVE');
 
-// Cargar usuarios
+// Cargar usuarios desde la base de datos real
 const loadUsers = async () => {
   isLoading.value = true;
   try {
-    const res = await api.get('/auth/users');
+    const res = await api.get('/users');
     if (res.data && Array.isArray(res.data.users)) {
       users.value = res.data.users;
     }
-  } catch {
-    // Datos de fallback sincronizados con el seed del sistema si no existe endpoint específico
-    if (users.value.length === 0) {
-      users.value = [
-        {
-          id: 'u-1',
-          name: 'Administrador MedSys',
-          email: 'admin@medical.com',
-          role: 'ADMIN',
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: 'u-2',
-          name: 'Operador MedSys',
-          email: 'operativo@medical.com',
-          role: 'OPERATIVE',
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: 'u-3',
-          name: 'Dr. Yael Mendoza',
-          email: 'yay@medical.com',
-          role: 'DOCTOR',
-          createdAt: new Date().toISOString(),
-        },
-      ];
-    }
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error desconocido al cargar usuarios';
+    console.error('Error al cargar usuarios:', message);
   } finally {
     isLoading.value = false;
   }
@@ -100,14 +76,13 @@ const filteredUsers = computed(() => {
 const openCreateModal = () => {
   formName.value = '';
   formEmail.value = '';
-  formPassword.value = '';
   formRole.value = 'OPERATIVE';
   formError.value = '';
   showModal.value = true;
 };
 
 const handleSaveUser = async () => {
-  if (!formName.value.trim() || !formEmail.value.trim() || !formPassword.value.trim()) {
+  if (!formName.value.trim() || !formEmail.value.trim()) {
     formError.value = 'Por favor completa todos los campos requeridos.';
     return;
   }
@@ -116,26 +91,40 @@ const handleSaveUser = async () => {
   formError.value = '';
 
   try {
-    await api.post('/auth/register', {
+    const res = await api.post('/users', {
       name: formName.value.trim(),
       email: formEmail.value.trim(),
-      password: formPassword.value.trim(),
       role: formRole.value,
     });
     await loadUsers();
     showModal.value = false;
-  } catch {
-    // Si la API no tiene endpoint público de registro, agregar localmente al directorio
-    users.value.unshift({
-      id: `u-${Date.now()}`,
-      name: formName.value.trim(),
-      email: formEmail.value.trim(),
-      role: formRole.value,
-      createdAt: new Date().toISOString(),
-    });
-    showModal.value = false;
+    successMessage.value = res.data?.message || 'Usuario registrado exitosamente. Se ha enviado el correo de activación.';
+    setTimeout(() => {
+      successMessage.value = '';
+    }, 6000);
+  } catch (err: unknown) {
+    const errorResponse = err as { response?: { data?: { message?: string } } };
+    formError.value = errorResponse?.response?.data?.message || 'Error al registrar el usuario en el sistema.';
   } finally {
     isSubmitting.value = false;
+  }
+};
+
+const handleDeleteUser = async (userId: string, userName: string) => {
+  if (!confirm(`¿Estás seguro de que deseas dar de baja al usuario "${userName}" del sistema?`)) {
+    return;
+  }
+
+  try {
+    await api.delete(`/users/${userId}`);
+    await loadUsers();
+    successMessage.value = `Usuario "${userName}" eliminado exitosamente.`;
+    setTimeout(() => {
+      successMessage.value = '';
+    }, 4000);
+  } catch (err: unknown) {
+    const errorResponse = err as { response?: { data?: { message?: string } } };
+    alert(errorResponse?.response?.data?.message || 'Error al eliminar el usuario.');
   }
 };
 
@@ -188,6 +177,18 @@ const getRoleBadge = (role: string) => {
         <Plus class="w-4 h-4" /> Nuevo Usuario
       </Button>
     </header>
+
+    <!-- Notificación de Éxito -->
+    <div
+      v-if="successMessage"
+      class="p-4 bg-mint-500/10 border border-mint-500/30 text-mint-700 dark:text-mint-300 rounded-2xl flex items-center justify-between text-sm font-semibold shadow-sm"
+    >
+      <div class="flex items-center gap-2">
+        <CheckCircle2 class="w-5 h-5 text-mint-600 dark:text-mint-400" />
+        <span>{{ successMessage }}</span>
+      </div>
+      <button class="text-xs hover:underline cursor-pointer" @click="successMessage = ''">Descartar</button>
+    </div>
 
     <!-- Métricas Rápidas de Usuarios -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -258,10 +259,10 @@ const getRoleBadge = (role: string) => {
             v-model="selectedRoleFilter"
             class="w-full sm:w-auto bg-muted dark:bg-card border border-border text-foreground text-sm rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-mint-500 font-semibold cursor-pointer"
           >
-            <option value="ALL">👥 Todos los Roles</option>
-            <option value="ADMIN">🛡️ Administrativo</option>
-            <option value="OPERATIVE">💼 Operativo</option>
-            <option value="DOCTOR">🩺 Médico</option>
+            <option value="ALL">Todos los Roles</option>
+            <option value="ADMIN">Administrativo</option>
+            <option value="OPERATIVE">Operativo</option>
+            <option value="DOCTOR">Médico</option>
           </select>
         </div>
       </CardContent>
@@ -288,7 +289,8 @@ const getRoleBadge = (role: string) => {
                 <th class="py-3.5 px-6 font-bold">Correo Electrónico</th>
                 <th class="py-3.5 px-6 font-bold">Rol en Sistema</th>
                 <th class="py-3.5 px-6 font-bold">Estatus</th>
-                <th class="py-3.5 px-6 font-bold text-right">Fecha de Alta</th>
+                <th class="py-3.5 px-6 font-bold">Fecha de Alta</th>
+                <th class="py-3.5 px-6 font-bold text-right">Acciones</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-black font-medium">
@@ -322,11 +324,22 @@ const getRoleBadge = (role: string) => {
                     <UserCheck class="w-3.5 h-3.5" /> Activo
                   </span>
                 </td>
-                <td class="py-4 px-6 text-right text-xs text-muted-foreground whitespace-nowrap">
-                  <div class="flex items-center justify-end gap-1.5">
+                <td class="py-4 px-6 text-xs text-muted-foreground whitespace-nowrap">
+                  <div class="flex items-center gap-1.5">
                     <Calendar class="w-3.5 h-3.5 text-slate-400" />
                     {{ new Date(user.createdAt).toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' }) }}
                   </div>
+                </td>
+                <td class="py-4 px-6 text-right">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="rounded-xl text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 p-2 h-8 w-8 inline-flex items-center justify-center"
+                    title="Eliminar usuario"
+                    @click="handleDeleteUser(user.id, user.name)"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </Button>
                 </td>
               </tr>
             </tbody>
@@ -357,20 +370,24 @@ const getRoleBadge = (role: string) => {
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-muted-foreground uppercase mb-1">Contraseña</label>
-            <Input v-model="formPassword" type="password" placeholder="••••••••" required />
-          </div>
-
-          <div>
             <label class="block text-xs font-bold text-muted-foreground uppercase mb-1">Rol Asignado</label>
             <select
               v-model="formRole"
-              class="w-full bg-muted dark:bg-card border border-border text-foreground text-sm rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-mint-500 font-semibold"
+              class="flex h-11 w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-mint-500 cursor-pointer"
             >
-              <option value="OPERATIVE">💼 Operativo (Gestión Médica sin Finanzas)</option>
-              <option value="ADMIN">🛡️ Administrativo (Acceso Total y Finanzas)</option>
-              <option value="DOCTOR">🩺 Médico (Uso preferencial app móvil)</option>
+              <option value="OPERATIVE">Operativo</option>
+              <option value="ADMIN">Administrativo</option>
+              <option value="DOCTOR">Médico</option>
             </select>
+          </div>
+
+          <div class="p-3.5 bg-mint-500/10 border border-mint-500/20 rounded-xl text-xs text-mint-700 dark:text-mint-300 space-y-1">
+            <p class="font-bold flex items-center gap-1.5">
+              <Mail class="w-4 h-4 text-mint-600 dark:text-mint-400" /> Invitación Segura por Correo
+            </p>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+              El sistema generará un token con validez de 24 horas y le enviará un correo de bienvenida para que el usuario defina su propia contraseña confidencial.
+            </p>
           </div>
 
           <div class="flex items-center justify-end gap-2 pt-2 border-t border-border">

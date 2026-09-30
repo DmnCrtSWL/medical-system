@@ -16,6 +16,8 @@ export interface Doctor {
   userId: string;
   specialty: string;
   licenseId?: string | null;
+  university?: string | null;
+  licenseFileUrl?: string | null;
   phone?: string | null;
   companyId?: string | null;
   createdAt: string;
@@ -30,6 +32,8 @@ export interface CreateDoctorPayload {
   password?: string;
   specialty?: string;
   licenseId?: string;
+  university?: string;
+  licenseFileUrl?: string;
   phone?: string;
   companyId?: string;
 }
@@ -39,6 +43,8 @@ export interface UpdateDoctorPayload {
   email?: string;
   specialty?: string;
   licenseId?: string;
+  university?: string;
+  licenseFileUrl?: string;
   phone?: string;
   companyId?: string;
 }
@@ -65,11 +71,14 @@ export const useDoctorStore = defineStore('doctors', () => {
     }
   };
 
-  const createDoctor = async (payload: CreateDoctorPayload) => {
+  const createDoctor = async (payload: CreateDoctorPayload | FormData) => {
     isLoading.value = true;
     error.value = null;
     try {
-      const response = await api.post('/doctors', payload);
+      const isFormData = payload instanceof FormData;
+      const response = await api.post('/doctors', payload, {
+        headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
+      });
       doctors.value.unshift(response.data.doctor);
       return response.data.doctor;
     } catch (err) {
@@ -83,11 +92,14 @@ export const useDoctorStore = defineStore('doctors', () => {
     }
   };
 
-  const updateDoctor = async (id: string, payload: UpdateDoctorPayload) => {
+  const updateDoctor = async (id: string, payload: UpdateDoctorPayload | FormData) => {
     isLoading.value = true;
     error.value = null;
     try {
-      const response = await api.put(`/doctors/${id}`, payload);
+      const isFormData = payload instanceof FormData;
+      const response = await api.put(`/doctors/${id}`, payload, {
+        headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
+      });
       const updated = response.data.doctor;
       const index = doctors.value.findIndex((d) => d.id === id);
       if (index !== -1) {

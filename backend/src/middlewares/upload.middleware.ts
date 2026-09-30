@@ -1,3 +1,4 @@
+import { Request } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -27,7 +28,7 @@ const storage = multer.diskStorage({
 
 // Filtro de tipos de archivo permitidos (PDF o Imágenes)
 const fileFilter = (
-  _req: any,
+  _req: Request,
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {

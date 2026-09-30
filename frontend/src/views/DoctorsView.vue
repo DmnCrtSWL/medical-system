@@ -20,7 +20,7 @@ import {
 } from 'lucide-vue-next';
 import { useDoctorStore, type Doctor } from '../stores/doctors';
 import { useCompanyStore } from '../stores/companies';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import Button from '../components/ui/Button.vue';
 import Input from '../components/ui/Input.vue';
 
@@ -259,35 +259,27 @@ const getFileUrl = (url: string | null | undefined) => {
 
 <template>
   <div class="space-y-6">
-    <!-- Top Bar / Action Bar -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            class="text-muted-foreground hover:text-foreground hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
-            @click="router.push('/')"
-          >
-            <ArrowLeft class="w-5 h-5 mr-1" />
-            Volver
-          </Button>
-          <div>
-            <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2 text-foreground">
-              <Stethoscope class="w-8 h-8 text-mint-500" />
-              Plantilla de Doctores In-House
-            </h1>
-            <p class="text-sm text-muted-foreground">Gestión de médicos, testigos de cédula y asignación a clientes corporativos B2B</p>
-          </div>
-        </div>
-
-        <Button
-          variant="default"
-          class="bg-mint-500 hover:bg-mint-600 text-white font-semibold shadow-md rounded-xl cursor-pointer"
-          @click="openCreateModal"
-        >
-          <Plus class="w-5 h-5 mr-1.5" />
-          Nuevo Doctor
+    <!-- Header de Sección -->
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-border">
+      <div class="flex items-center gap-3">
+        <Button variant="ghost" size="sm" class="rounded-xl p-2 text-slate-400 hover:text-foreground cursor-pointer" @click="router.push('/')">
+          <ArrowLeft class="w-5 h-5" />
         </Button>
+        <div class="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 shadow-sm">
+          <Stethoscope class="w-6 h-6" />
+        </div>
+        <div>
+          <h2 class="text-3xl font-extrabold tracking-tight text-foreground">Plantilla de Doctores In-House</h2>
+          <p class="text-sm font-medium text-muted-foreground mt-0.5">
+            Gestión de médicos, testigos de cédula y asignación a clientes corporativos B2B
+          </p>
+        </div>
       </div>
+
+      <Button class="bg-mint-500 hover:bg-mint-600 text-white rounded-xl flex items-center gap-2 shadow-sm font-bold cursor-pointer" @click="openCreateModal">
+        <Plus class="w-4 h-4" /> Nuevo Doctor
+      </Button>
+    </header>
 
       <!-- Banner de Notificación de Éxito -->
       <div
@@ -303,11 +295,6 @@ const getFileUrl = (url: string | null | undefined) => {
 
       <!-- Main Content Card -->
       <Card class="bg-card border border-border shadow-sm rounded-2xl overflow-hidden">
-        <CardHeader class="border-b border-border pb-4">
-          <CardTitle class="text-xl text-foreground">Directorio de Médicos</CardTitle>
-          <CardDescription class="text-muted-foreground">Plantilla de doctores registrados, cédulas profesionales y asignaciones corporativas</CardDescription>
-        </CardHeader>
-
         <CardContent class="p-0">
           <!-- Loading State -->
           <div v-if="doctorStore.isLoading && doctorStore.doctors.length === 0" class="p-12 text-center text-muted-foreground">

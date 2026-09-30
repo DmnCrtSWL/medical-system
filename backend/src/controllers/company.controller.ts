@@ -1,14 +1,32 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import prisma from '../config/db';
+import { hashPassword } from '../utils/password';
+import { generateSetPasswordToken } from '../utils/token';
+import { sendSetPasswordEmail } from '../services/email.service';
 
 export const getCompanies = async (_req: Request, res: Response): Promise<void> => {
   try {
     const companies = await prisma.company.findMany({
       orderBy: { createdAt: 'desc' },
+      include: {
+        doctors: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
     });
     res.status(200).json(companies);
-  } catch (error) {
-    console.error('Error fetching companies:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error fetching companies';
+    console.error('Error fetching companies:', message);
     res.status(500).json({ message: 'Error fetching companies' });
   }
 };
@@ -21,7 +39,17 @@ export const getCompanyById = async (req: Request, res: Response): Promise<void>
       include: {
         patients: true,
         contracts: true,
-        doctors: true,
+        doctors: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -31,85 +59,165 @@ export const getCompanyById = async (req: Request, res: Response): Promise<void>
     }
 
     res.status(200).json(company);
-  } catch (error) {
-    console.error('Error fetching company by ID:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error fetching company details';
+    console.error('Error fetching company by ID:', message);
     res.status(500).json({ message: 'Error fetching company details' });
   }
 };
 
 export const createCompany = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, taxId, address, phone } = req.body;
+    const {
+      name,
+      legalName,
+      representativeName,
+      representativeTitle,
+      taxId,
+      address,
+      phone,
+      email,
+    } = req.body;
 
-    if (!name || typeof name !== 'string' || name.trim() === '') {
-      res.status(400).json({ message: 'Company name is required' });
+    const effectiveLegalName = legalName ? String(legalName).trim() : null;
+    const effectiveName = (name && typeof name === 'string' && name.trim() !== '')
+      ? name.trim()
+      : effectiveLegalName;
+
+    if (!effectiveName) {
+      res.status(400).json({ message: 'El nombre legal de la empresa es obligatorio' });
       return;
     }
 
-    if (taxId) {
+    if (taxId && typeof taxId === 'string' && taxId.trim() !== '') {
+      const cleanTaxId = taxId.trim().toUpperCase();
       const existingCompany = await prisma.company.findUnique({
-        where: { taxId },
+        where: { taxId: cleanTaxId },
       });
       if (existingCompany) {
-        res.status(409).json({ message: 'Company with this taxId already exists' });
+        res.status(409).json({ message: 'Ya existe una empresa registrada con este RFC / Tax ID' });
         return;
+      }
+    }
+
+    const cleanEmail = email && typeof email === 'string' && email.trim() !== ''
+      ? email.trim().toLowerCase()
+      : null;
+
+    // Si se proporciona correo corporativo, se crea usuario y se despacha invitación
+    if (cleanEmail) {
+      let user = await prisma.user.findUnique({
+        where: { email: cleanEmail },
+      });
+
+      if (!user) {
+        const randomPassword = crypto.randomBytes(24).toString('hex');
+        const hashedPassword = await hashPassword(randomPassword);
+
+        user = await prisma.user.create({
+          data: {
+            name: representativeName ? String(representativeName).trim() : (legalName ? String(legalName).trim() : name.trim()),
+            email: cleanEmail,
+            password: hashedPassword,
+            role: 'OPERATIVE',
+          },
+        });
+      }
+
+      try {
+        const token = generateSetPasswordToken(user.id, cleanEmail);
+        await sendSetPasswordEmail({
+          to: cleanEmail,
+          name: representativeName ? String(representativeName).trim() : (legalName ? String(legalName).trim() : name.trim()),
+          token,
+          roleOrEntity: 'Empresa Cliente B2B',
+        });
+      } catch (emailError) {
+        console.error('Error enviando correo de activación de empresa:', emailError);
       }
     }
 
     const company = await prisma.company.create({
       data: {
-        name: name.trim(),
-        taxId: taxId ? taxId.trim() : null,
-        address: address ? address.trim() : null,
-        phone: phone ? phone.trim() : null,
+        name: effectiveName,
+        legalName: effectiveLegalName || effectiveName,
+        representativeName: representativeName ? String(representativeName).trim() : null,
+        representativeTitle: representativeTitle ? String(representativeTitle).trim() : null,
+        taxId: taxId ? String(taxId).trim().toUpperCase() : null,
+        address: address ? String(address).trim() : null,
+        phone: phone ? String(phone).trim() : null,
+        email: cleanEmail,
       },
     });
 
-    res.status(201).json({ message: 'Company created successfully', company });
-  } catch (error) {
-    console.error('Error creating company:', error);
-    res.status(500).json({ message: 'Error creating company' });
+    res.status(201).json({
+      message: 'Empresa registrada exitosamente. Se ha despachado el enlace de activación por correo electrónico.',
+      company,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error interno al registrar la empresa';
+    console.error('Error creating company:', message);
+    res.status(500).json({ message: 'Error interno al registrar la empresa' });
   }
 };
 
 export const updateCompany = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { name, taxId, address, phone } = req.body;
+    const {
+      name,
+      legalName,
+      representativeName,
+      representativeTitle,
+      taxId,
+      address,
+      phone,
+      email,
+    } = req.body;
 
     const existingCompany = await prisma.company.findUnique({
       where: { id },
     });
 
     if (!existingCompany) {
-      res.status(404).json({ message: 'Company not found' });
+      res.status(404).json({ message: 'Empresa no encontrada' });
       return;
     }
 
-    if (taxId && taxId !== existingCompany.taxId) {
+    if (taxId && typeof taxId === 'string' && taxId.trim().toUpperCase() !== existingCompany.taxId) {
+      const cleanTaxId = taxId.trim().toUpperCase();
       const taxIdCheck = await prisma.company.findUnique({
-        where: { taxId },
+        where: { taxId: cleanTaxId },
       });
       if (taxIdCheck) {
-        res.status(409).json({ message: 'Tax ID is already in use by another company' });
+        res.status(409).json({ message: 'El RFC ya está registrado para otra empresa' });
         return;
       }
     }
 
+    const cleanEmail = email !== undefined
+      ? (email && typeof email === 'string' && email.trim() !== '' ? email.trim().toLowerCase() : null)
+      : existingCompany.email;
+
     const updatedCompany = await prisma.company.update({
       where: { id },
       data: {
-        name: name !== undefined ? name.trim() : existingCompany.name,
-        taxId: taxId !== undefined ? (taxId ? taxId.trim() : null) : existingCompany.taxId,
-        address: address !== undefined ? (address ? address.trim() : null) : existingCompany.address,
-        phone: phone !== undefined ? (phone ? phone.trim() : null) : existingCompany.phone,
+        name: name !== undefined ? name.trim() : (legalName !== undefined && legalName ? String(legalName).trim() : existingCompany.name),
+        legalName: legalName !== undefined ? (legalName ? String(legalName).trim() : null) : existingCompany.legalName,
+        representativeName: representativeName !== undefined ? (representativeName ? String(representativeName).trim() : null) : existingCompany.representativeName,
+        representativeTitle: representativeTitle !== undefined ? (representativeTitle ? String(representativeTitle).trim() : null) : existingCompany.representativeTitle,
+        taxId: taxId !== undefined ? (taxId ? String(taxId).trim().toUpperCase() : null) : existingCompany.taxId,
+        address: address !== undefined ? (address ? String(address).trim() : null) : existingCompany.address,
+        phone: phone !== undefined ? (phone ? String(phone).trim() : null) : existingCompany.phone,
+        email: cleanEmail,
       },
     });
 
-    res.status(200).json({ message: 'Company updated successfully', company: updatedCompany });
-  } catch (error) {
-    console.error('Error updating company:', error);
-    res.status(500).json({ message: 'Error updating company' });
+    res.status(200).json({ message: 'Empresa actualizada exitosamente', company: updatedCompany });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error interno al actualizar la empresa';
+    console.error('Error updating company:', message);
+    res.status(500).json({ message: 'Error interno al actualizar la empresa' });
   }
 };
 
@@ -122,7 +230,7 @@ export const deleteCompany = async (req: Request, res: Response): Promise<void> 
     });
 
     if (!existingCompany) {
-      res.status(404).json({ message: 'Company not found' });
+      res.status(404).json({ message: 'Empresa no encontrada' });
       return;
     }
 
@@ -130,9 +238,10 @@ export const deleteCompany = async (req: Request, res: Response): Promise<void> 
       where: { id },
     });
 
-    res.status(200).json({ message: 'Company deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting company:', error);
-    res.status(500).json({ message: 'Error deleting company' });
+    res.status(200).json({ message: 'Empresa eliminada exitosamente del sistema' });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error al eliminar la empresa';
+    console.error('Error deleting company:', message);
+    res.status(500).json({ message: 'Error al eliminar la empresa' });
   }
 };

@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { FileText, Plus, Trash2, Pencil, ArrowLeft, AlertCircle, Building2, Calendar, DollarSign, FileDown } from 'lucide-vue-next';
 import { useContractStore, type Contract } from '../stores/contracts';
 import { useCompanyStore } from '../stores/companies';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import Button from '../components/ui/Button.vue';
 import Input from '../components/ui/Input.vue';
 
@@ -139,37 +139,31 @@ const formatDate = (dateStr: string) => {
 </script>
 
 <template>
-  <div class="p-6 md:p-10">
-    <div class="max-w-6xl mx-auto space-y-6">
-      <!-- Top Bar / Action Bar -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <Button variant="ghost" class="text-muted-foreground transition-colors duration-300 hover:text-foreground transition-colors duration-300 hover:bg-slate-200 cursor-pointer" @click="router.push('/')">
-            <ArrowLeft class="w-5 h-5 mr-1" />
-            Volver
-          </Button>
-          <div>
-            <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2 text-foreground transition-colors duration-300">
-              <FileText class="w-8 h-8 text-mint-500" />
-              Convenios & Contratos B2B
-            </h1>
-            <p class="text-sm text-muted-foreground transition-colors duration-300">Gestión de convenios de servicios médicos corporativos y generación de PDF</p>
-          </div>
-        </div>
-
-        <Button variant="default" class="bg-mint-500 hover:bg-mint-600 text-white font-semibold shadow-md rounded-xl cursor-pointer" @click="openCreateModal">
-          <Plus class="w-5 h-5 mr-1.5" />
-          Nuevo Contrato
+  <div class="space-y-6">
+    <!-- Header de Sección -->
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-border">
+      <div class="flex items-center gap-3">
+        <Button variant="ghost" size="sm" class="rounded-xl p-2 text-slate-400 hover:text-foreground cursor-pointer" @click="router.push('/')">
+          <ArrowLeft class="w-5 h-5" />
         </Button>
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 shadow-sm">
+          <FileText class="w-6 h-6" />
+        </div>
+        <div>
+          <h2 class="text-3xl font-extrabold tracking-tight text-foreground">Convenios & Contratos B2B</h2>
+          <p class="text-sm font-medium text-muted-foreground mt-0.5">
+            Gestión de convenios de servicios médicos corporativos y generación de PDF
+          </p>
+        </div>
       </div>
+
+      <Button class="bg-mint-500 hover:bg-mint-600 text-white rounded-xl flex items-center gap-2 shadow-sm font-bold cursor-pointer" @click="openCreateModal">
+        <Plus class="w-4 h-4" /> Nuevo Contrato
+      </Button>
+    </header>
 
       <!-- Main Content Card -->
       <Card class="bg-card transition-colors duration-300 border border-border shadow-sm rounded-2xl overflow-hidden">
-        <CardHeader class="border-b border-border pb-4">
-          <CardTitle class="text-xl text-foreground transition-colors duration-300">Directorio de Convenios Médicos</CardTitle>
-          <CardDescription class="text-muted-foreground transition-colors duration-300">Listado de contratos registrados con clientes corporativos y descargas de PDF</CardDescription>
-        </CardHeader>
-
         <CardContent class="p-0">
           <!-- Loading State -->
           <div v-if="contractStore.isLoading && contractStore.contracts.length === 0" class="p-12 text-center text-muted-foreground transition-colors duration-300">
@@ -282,7 +276,6 @@ const formatDate = (dateStr: string) => {
           </div>
         </CardContent>
       </Card>
-    </div>
 
     <!-- Modal Form (Nuevo / Editar Contrato) -->
     <div v-if="showModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">

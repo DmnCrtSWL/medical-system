@@ -6,11 +6,26 @@ import api from '../services/api';
 export interface Company {
   id: string;
   name: string;
+  legalName?: string | null;
+  representativeName?: string | null;
+  representativeTitle?: string | null;
   taxId?: string | null;
   address?: string | null;
   phone?: string | null;
+  email?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CompanyPayload {
+  name: string;
+  legalName?: string;
+  representativeName?: string;
+  representativeTitle?: string;
+  taxId?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
 }
 
 export const useCompanyStore = defineStore('companies', () => {
@@ -35,7 +50,7 @@ export const useCompanyStore = defineStore('companies', () => {
     }
   };
 
-  const createCompany = async (data: { name: string; taxId?: string; address?: string; phone?: string }) => {
+  const createCompany = async (data: CompanyPayload) => {
     isLoading.value = true;
     error.value = null;
     try {
@@ -53,7 +68,7 @@ export const useCompanyStore = defineStore('companies', () => {
     }
   };
 
-  const updateCompany = async (id: string, data: { name?: string; taxId?: string; address?: string; phone?: string }) => {
+  const updateCompany = async (id: string, data: Partial<CompanyPayload>) => {
     isLoading.value = true;
     error.value = null;
     try {

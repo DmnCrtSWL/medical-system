@@ -3,34 +3,49 @@ import { ref } from 'vue';
 import axios from 'axios';
 import api from '../services/api';
 import type { Company } from './companies';
+import type { Doctor } from './doctors';
+
+export type ContractTariff = 'TARIFF_A' | 'TARIFF_B' | 'TARIFF_C';
+export type ContractDuration = 'MONTHS_6' | 'MONTHS_12' | 'MONTHS_24';
+export type ContractStatus = 'ACTIVE' | 'INACTIVE' | 'EXPIRED';
 
 export interface Contract {
   id: string;
   companyId: string;
+  doctorId?: string | null;
   startDate: string;
   endDate: string;
   amount?: number | null;
-  status: 'ACTIVE' | 'INACTIVE' | 'EXPIRED';
+  tariff?: ContractTariff | null;
+  duration?: ContractDuration | null;
+  status: ContractStatus;
   pdfUrl?: string | null;
   createdAt: string;
   updatedAt: string;
   company: Company;
+  doctor?: Doctor | null;
 }
 
 export interface CreateContractPayload {
   companyId: string;
+  doctorId?: string | null;
   startDate: string;
-  endDate: string;
+  endDate?: string;
+  tariff?: ContractTariff;
+  duration?: ContractDuration;
   amount?: number | null;
-  status?: 'ACTIVE' | 'INACTIVE' | 'EXPIRED';
+  status?: ContractStatus;
 }
 
 export interface UpdateContractPayload {
   companyId?: string;
+  doctorId?: string | null;
   startDate?: string;
   endDate?: string;
+  tariff?: ContractTariff;
+  duration?: ContractDuration;
   amount?: number | null;
-  status?: 'ACTIVE' | 'INACTIVE' | 'EXPIRED';
+  status?: ContractStatus;
 }
 
 export const useContractStore = defineStore('contracts', () => {
@@ -124,7 +139,7 @@ export const useContractStore = defineStore('contracts', () => {
       const link = document.createElement('a');
       link.href = url;
       const safeName = companyName.replace(/[^a-zA-Z0-9_-]/g, '_');
-      link.setAttribute('download', `Contrato_${safeName}_${id.slice(0, 8)}.pdf`);
+      link.setAttribute('download', `Machote_Contrato_${safeName}_${id.slice(0, 8)}.pdf`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

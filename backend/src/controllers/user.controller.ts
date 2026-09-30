@@ -23,8 +23,9 @@ export const getUsers = async (_req: Request, res: Response): Promise<void> => {
       orderBy: { createdAt: 'desc' },
     });
     res.status(200).json({ users });
-  } catch (error) {
-    console.error('Error fetching users:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error interno al obtener los usuarios';
+    console.error('Error fetching users:', message);
     res.status(500).json({ message: 'Error interno al obtener los usuarios' });
   }
 };
@@ -108,8 +109,9 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       message: 'Usuario registrado exitosamente. Se ha enviado un correo con el enlace para configurar su contraseña.',
       user: newUser,
     });
-  } catch (error) {
-    console.error('Error creating user:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error interno al registrar el usuario';
+    console.error('Error creating user:', message);
     res.status(500).json({ message: 'Error interno al registrar el usuario' });
   }
 };
@@ -141,8 +143,9 @@ export const deleteUser = async (req: AuthenticatedRequest, res: Response): Prom
     });
 
     res.status(200).json({ message: 'Usuario eliminado exitosamente del sistema' });
-  } catch (error) {
-    console.error('Error deleting user:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error interno al eliminar el usuario';
+    console.error('Error deleting user:', message);
     res.status(500).json({ message: 'Error interno al eliminar el usuario' });
   }
 };

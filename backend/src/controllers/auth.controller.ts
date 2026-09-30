@@ -46,8 +46,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         role: user.role,
       },
     });
-  } catch (error: any) {
-    console.error('Login error:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Internal server error during authentication';
+    console.error('Login error:', message);
     res.status(500).json({ message: 'Internal server error during authentication' });
   }
 };
@@ -59,8 +60,9 @@ export const getMe = async (req: AuthenticatedRequest, res: Response): Promise<v
       return;
     }
     res.status(200).json({ user: req.user });
-  } catch (error: any) {
-    console.error('getMe error:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error fetching user profile';
+    console.error('getMe error:', message);
     res.status(500).json({ message: 'Error fetching user profile' });
   }
 };
@@ -100,8 +102,9 @@ export const verifySetPasswordTokenHandler = async (req: Request, res: Response)
         name: user.name,
       },
     });
-  } catch (error) {
-    console.error('Error en verifySetPasswordTokenHandler:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error interno del servidor al verificar el token';
+    console.error('Error en verifySetPasswordTokenHandler:', message);
     res.status(500).json({ valid: false, message: 'Error interno del servidor al verificar el token' });
   }
 };
@@ -160,8 +163,9 @@ export const setPassword = async (req: Request, res: Response): Promise<void> =>
         role: updatedUser.role,
       },
     });
-  } catch (error) {
-    console.error('Error en setPassword:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error interno al establecer la contraseña';
+    console.error('Error en setPassword:', message);
     res.status(500).json({ message: 'Error interno al establecer la contraseña' });
   }
 };

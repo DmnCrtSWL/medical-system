@@ -40,8 +40,9 @@ const loadUsers = async () => {
     if (res.data && Array.isArray(res.data.users)) {
       users.value = res.data.users;
     }
-  } catch (error: any) {
-    console.error('Error al cargar usuarios:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error desconocido al cargar usuarios';
+    console.error('Error al cargar usuarios:', message);
   } finally {
     isLoading.value = false;
   }
@@ -101,8 +102,9 @@ const handleSaveUser = async () => {
     setTimeout(() => {
       successMessage.value = '';
     }, 6000);
-  } catch (err: any) {
-    formError.value = err?.response?.data?.message || 'Error al registrar el usuario en el sistema.';
+  } catch (err: unknown) {
+    const errorResponse = err as { response?: { data?: { message?: string } } };
+    formError.value = errorResponse?.response?.data?.message || 'Error al registrar el usuario en el sistema.';
   } finally {
     isSubmitting.value = false;
   }
@@ -120,8 +122,9 @@ const handleDeleteUser = async (userId: string, userName: string) => {
     setTimeout(() => {
       successMessage.value = '';
     }, 4000);
-  } catch (err: any) {
-    alert(err?.response?.data?.message || 'Error al eliminar el usuario.');
+  } catch (err: unknown) {
+    const errorResponse = err as { response?: { data?: { message?: string } } };
+    alert(errorResponse?.response?.data?.message || 'Error al eliminar el usuario.');
   }
 };
 

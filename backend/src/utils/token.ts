@@ -31,7 +31,7 @@ export const generateSetPasswordToken = (userId: string, email: string): string 
  * Retorna el payload decodificado si es válido y no ha expirado; lanza error si es inválido.
  */
 export const verifySetPasswordToken = (token: string): { userId: string; email: string } => {
-  const decoded = jwt.verify(token, JWT_SECRET) as any;
+  const decoded = jwt.verify(token, JWT_SECRET) as Partial<SetPasswordPayload> | undefined;
 
   if (!decoded || decoded.type !== 'SET_PASSWORD' || !decoded.userId || !decoded.email) {
     throw new Error('Token de configuración de contraseña inválido o corrupto');

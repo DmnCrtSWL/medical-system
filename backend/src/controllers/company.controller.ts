@@ -24,8 +24,9 @@ export const getCompanies = async (_req: Request, res: Response): Promise<void> 
       },
     });
     res.status(200).json(companies);
-  } catch (error) {
-    console.error('Error fetching companies:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error fetching companies';
+    console.error('Error fetching companies:', message);
     res.status(500).json({ message: 'Error fetching companies' });
   }
 };
@@ -58,8 +59,9 @@ export const getCompanyById = async (req: Request, res: Response): Promise<void>
     }
 
     res.status(200).json(company);
-  } catch (error) {
-    console.error('Error fetching company by ID:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error fetching company details';
+    console.error('Error fetching company by ID:', message);
     res.status(500).json({ message: 'Error fetching company details' });
   }
 };
@@ -152,8 +154,9 @@ export const createCompany = async (req: Request, res: Response): Promise<void> 
       message: 'Empresa registrada exitosamente. Se ha despachado el enlace de activación por correo electrónico.',
       company,
     });
-  } catch (error) {
-    console.error('Error creating company:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error interno al registrar la empresa';
+    console.error('Error creating company:', message);
     res.status(500).json({ message: 'Error interno al registrar la empresa' });
   }
 };
@@ -211,8 +214,9 @@ export const updateCompany = async (req: Request, res: Response): Promise<void> 
     });
 
     res.status(200).json({ message: 'Empresa actualizada exitosamente', company: updatedCompany });
-  } catch (error) {
-    console.error('Error updating company:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error interno al actualizar la empresa';
+    console.error('Error updating company:', message);
     res.status(500).json({ message: 'Error interno al actualizar la empresa' });
   }
 };
@@ -235,8 +239,9 @@ export const deleteCompany = async (req: Request, res: Response): Promise<void> 
     });
 
     res.status(200).json({ message: 'Empresa eliminada exitosamente del sistema' });
-  } catch (error) {
-    console.error('Error deleting company:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error al eliminar la empresa';
+    console.error('Error deleting company:', message);
     res.status(500).json({ message: 'Error al eliminar la empresa' });
   }
 };

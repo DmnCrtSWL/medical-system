@@ -22,8 +22,9 @@ export const getDoctors = async (_req: Request, res: Response): Promise<void> =>
       },
     });
     res.status(200).json(doctors);
-  } catch (error) {
-    console.error('Error fetching doctors:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error fetching doctors';
+    console.error('Error fetching doctors:', message);
     res.status(500).json({ message: 'Error fetching doctors' });
   }
 };
@@ -52,8 +53,9 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
     }
 
     res.status(200).json(doctor);
-  } catch (error) {
-    console.error('Error fetching doctor by ID:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error fetching doctor details';
+    console.error('Error fetching doctor by ID:', message);
     res.status(500).json({ message: 'Error fetching doctor details' });
   }
 };
@@ -161,8 +163,9 @@ export const createDoctor = async (req: Request, res: Response): Promise<void> =
       message: 'Médico dado de alta exitosamente. Se ha enviado el enlace de activación por correo electrónico.',
       doctor,
     });
-  } catch (error) {
-    console.error('Error creating doctor:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error interno al registrar al médico';
+    console.error('Error creating doctor:', message);
     res.status(500).json({ message: 'Error interno al registrar al médico' });
   }
 };
@@ -244,8 +247,9 @@ export const updateDoctor = async (req: Request, res: Response): Promise<void> =
     });
 
     res.status(200).json({ message: 'Médico actualizado exitosamente', doctor: updatedDoctor });
-  } catch (error) {
-    console.error('Error updating doctor:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error interno al actualizar al médico';
+    console.error('Error updating doctor:', message);
     res.status(500).json({ message: 'Error interno al actualizar al médico' });
   }
 };
@@ -268,8 +272,9 @@ export const deleteDoctor = async (req: Request, res: Response): Promise<void> =
     });
 
     res.status(200).json({ message: 'Médico eliminado exitosamente del sistema' });
-  } catch (error) {
-    console.error('Error deleting doctor:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error al eliminar al médico';
+    console.error('Error deleting doctor:', message);
     res.status(500).json({ message: 'Error al eliminar al médico' });
   }
 };

@@ -234,7 +234,7 @@ export const generateContractPdf = (data: ContractPdfData): Promise<Buffer> => {
       );
 
       doc.end();
-    } catch (error) {
+    } catch (error: unknown) {
       reject(error);
     }
   });

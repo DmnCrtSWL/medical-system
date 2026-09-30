@@ -56,8 +56,9 @@ export const getContracts = async (_req: Request, res: Response): Promise<void> 
       },
     });
     res.status(200).json(contracts);
-  } catch (error) {
-    console.error('Error fetching contracts:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error fetching contracts';
+    console.error('Error fetching contracts:', message);
     res.status(500).json({ message: 'Error fetching contracts' });
   }
 };
@@ -89,8 +90,9 @@ export const getContractById = async (req: Request, res: Response): Promise<void
     }
 
     res.status(200).json(contract);
-  } catch (error) {
-    console.error('Error fetching contract details:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error al consultar detalles del contrato';
+    console.error('Error fetching contract details:', message);
     res.status(500).json({ message: 'Error al consultar detalles del contrato' });
   }
 };
@@ -187,8 +189,9 @@ export const createContract = async (req: Request, res: Response): Promise<void>
     }
 
     res.status(201).json({ message: 'Contrato y asignación registrados exitosamente', contract });
-  } catch (error) {
-    console.error('Error creating contract:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error interno al registrar el contrato';
+    console.error('Error creating contract:', message);
     res.status(500).json({ message: 'Error interno al registrar el contrato' });
   }
 };
@@ -256,8 +259,9 @@ export const downloadContractPdf = async (req: Request, res: Response): Promise<
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', pdfBuffer.length);
     res.status(200).send(pdfBuffer);
-  } catch (error) {
-    console.error('Error generating contract PDF:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error al generar el machote de contrato en PDF';
+    console.error('Error generating contract PDF:', message);
     res.status(500).json({ message: 'Error al generar el machote de contrato en PDF' });
   }
 };
@@ -361,8 +365,9 @@ export const updateContract = async (req: Request, res: Response): Promise<void>
     }
 
     res.status(200).json({ message: 'Contrato actualizado exitosamente', contract: updatedContract });
-  } catch (error) {
-    console.error('Error updating contract:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error interno al actualizar el contrato';
+    console.error('Error updating contract:', message);
     res.status(500).json({ message: 'Error interno al actualizar el contrato' });
   }
 };
@@ -385,8 +390,9 @@ export const deleteContract = async (req: Request, res: Response): Promise<void>
     });
 
     res.status(200).json({ message: 'Contrato eliminado exitosamente del sistema' });
-  } catch (error) {
-    console.error('Error deleting contract:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error al eliminar el contrato';
+    console.error('Error deleting contract:', message);
     res.status(500).json({ message: 'Error al eliminar el contrato' });
   }
 };

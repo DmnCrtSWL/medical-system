@@ -2,7 +2,7 @@
 import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
-import { Building2, FileText, DollarSign, Bell, Stethoscope } from 'lucide-vue-next';
+import { Building2, FileText, DollarSign, Stethoscope } from 'lucide-vue-next';
 import Button from '../components/ui/Button.vue';
 import { useAuthStore } from '../stores/auth';
 import { useCompanyStore } from '../stores/companies';
@@ -72,10 +72,6 @@ const recentCompanies = computed(() => {
         <h2 class="text-3xl font-bold text-foreground transition-colors duration-300">Resumen Corporativo B2B</h2>
         <p class="text-muted-foreground transition-colors duration-300 mt-1">Métricas y administración general de la clínica.</p>
       </div>
-      <button class="w-10 h-10 bg-card transition-colors duration-300 rounded-full flex items-center justify-center shadow-sm border border-border text-muted-foreground transition-colors duration-300 hover:text-mint-600 transition-colors relative">
-        <Bell class="w-5 h-5" />
-        <span class="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
-      </button>
     </header>
 
     <!-- Stats Grid -->

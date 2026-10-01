@@ -3,6 +3,8 @@ import crypto from 'crypto';
 import prisma from '../config/db';
 import { hashPassword } from '../utils/password';
 import { generateSetPasswordToken } from '../utils/token';
+import fs from 'fs';
+import path from 'path';
 import { sendSetPasswordEmail } from '../services/email.service';
 
 export const getDoctors = async (_req: Request, res: Response): Promise<void> => {
@@ -217,7 +219,22 @@ export const updateDoctor = async (req: Request, res: Response): Promise<void> =
 
     let updatedLicenseFileUrl = existingDoctor.licenseFileUrl;
     if (req.file) {
+      // Si subió un nuevo archivo y ya tenía uno previo, limpiar el anterior
+      if (existingDoctor.licenseFileUrl && existingDoctor.licenseFileUrl.startsWith('/uploads/licenses/')) {
+        const oldPath = path.join(__dirname, '../../uploads/licenses', path.basename(existingDoctor.licenseFileUrl));
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
       updatedLicenseFileUrl = `/uploads/licenses/${req.file.filename}`;
+    } else if (req.body.removeLicenseFile === 'true' || req.body.removeLicenseFile === true) {
+      if (existingDoctor.licenseFileUrl && existingDoctor.licenseFileUrl.startsWith('/uploads/licenses/')) {
+        const oldPath = path.join(__dirname, '../../uploads/licenses', path.basename(existingDoctor.licenseFileUrl));
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+      updatedLicenseFileUrl = null;
     } else if (req.body.licenseFileUrl !== undefined || req.body.licenseUrl !== undefined) {
       const providedUrl = req.body.licenseFileUrl || req.body.licenseUrl;
       updatedLicenseFileUrl = providedUrl ? String(providedUrl).trim() : null;

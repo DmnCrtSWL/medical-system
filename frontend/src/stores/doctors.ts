@@ -75,10 +75,7 @@ export const useDoctorStore = defineStore('doctors', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      const isFormData = payload instanceof FormData;
-      const response = await api.post('/doctors', payload, {
-        headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
-      });
+      const response = await api.post('/doctors', payload);
       doctors.value.unshift(response.data.doctor);
       return response.data.doctor;
     } catch (err) {
@@ -96,10 +93,7 @@ export const useDoctorStore = defineStore('doctors', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      const isFormData = payload instanceof FormData;
-      const response = await api.put(`/doctors/${id}`, payload, {
-        headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
-      });
+      const response = await api.put(`/doctors/${id}`, payload);
       const updated = response.data.doctor;
       const index = doctors.value.findIndex((d) => d.id === id);
       if (index !== -1) {

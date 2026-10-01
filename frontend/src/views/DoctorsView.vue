@@ -47,6 +47,18 @@ const licenseFile = ref<File | null>(null);
 const licenseFileName = ref('');
 const currentLicenseFileUrl = ref<string | null>(null);
 const fileInputRef = ref<HTMLInputElement | null>(null);
+const removeWitness = ref(false);
+
+const clearSelectedFile = () => {
+  licenseFile.value = null;
+  licenseFileName.value = '';
+  if (fileInputRef.value) fileInputRef.value.value = '';
+};
+
+const removeExistingWitness = () => {
+  currentLicenseFileUrl.value = null;
+  removeWitness.value = true;
+};
 
 onMounted(() => {
   doctorStore.fetchDoctors();
@@ -65,6 +77,7 @@ const openCreateModal = () => {
   licenseFile.value = null;
   licenseFileName.value = '';
   currentLicenseFileUrl.value = null;
+  removeWitness.value = false;
   formError.value = '';
   showModal.value = true;
 };
@@ -81,6 +94,7 @@ const openEditModal = (doctor: Doctor) => {
   licenseFile.value = null;
   licenseFileName.value = '';
   currentLicenseFileUrl.value = doctor.licenseFileUrl || null;
+  removeWitness.value = false;
   formError.value = '';
   showModal.value = true;
 };
@@ -91,6 +105,7 @@ const closeModal = () => {
   licenseFile.value = null;
   licenseFileName.value = '';
   currentLicenseFileUrl.value = null;
+  removeWitness.value = false;
 };
 
 // Optimización y compresión ligera de imágenes en canvas antes de subir
@@ -152,6 +167,14 @@ const handleFileChange = async (event: Event) => {
     return;
   }
 
+  if (file.size > 3 * 1024 * 1024) {
+    formError.value = 'El archivo supera el tamaño máximo permitido de 3 MB.';
+    input.value = '';
+    return;
+  }
+
+  removeWitness.value = false;
+
   // Si es imagen mayor a 400KB, comprimirla en el navegador para ahorrar ancho de banda y almacenamiento
   if (file.type.startsWith('image/') && file.size > 400 * 1024) {
     try {
@@ -211,6 +234,8 @@ const handleSaveDoctor = async () => {
     if (companyId.value) formData.append('companyId', companyId.value);
     if (licenseFile.value) {
       formData.append('licenseFile', licenseFile.value);
+    } else if (removeWitness.value) {
+      formData.append('removeLicenseFile', 'true');
     }
 
     if (editingDoctorId.value) {
@@ -371,7 +396,7 @@ const getFileUrl = (url: string | null | undefined) => {
                         title="Ver o descargar comprobante"
                       >
                         <FileCheck class="w-3 h-3 text-mint-600" />
-                        Ver Testigo
+                        Cédula
                       </a>
                     </div>
                     <span v-else-if="!doctor.licenseId" class="text-xs text-muted-foreground italic">Sin cédula</span>
@@ -503,28 +528,48 @@ const getFileUrl = (url: string | null | undefined) => {
                 <div class="w-10 h-10 rounded-xl bg-mint-500/10 text-mint-600 flex items-center justify-center">
                   <Upload class="w-5 h-5" />
                 </div>
-                <div v-if="licenseFileName" class="text-xs font-bold text-mint-600 flex items-center gap-1">
-                  <FileCheck class="w-4 h-4" /> {{ licenseFileName }}
+                <div v-if="licenseFileName" class="text-xs font-bold text-mint-600 flex items-center justify-between w-full px-3 py-1.5 bg-mint-500/10 rounded-xl border border-mint-500/20">
+                  <span class="flex items-center gap-1.5 truncate">
+                    <FileCheck class="w-4 h-4 shrink-0" /> {{ licenseFileName }}
+                  </span>
+                  <button
+                    type="button"
+                    class="text-rose-500 hover:text-rose-700 text-xs font-bold ml-2 hover:underline cursor-pointer shrink-0"
+                    title="Quitar archivo seleccionado"
+                    @click.stop="clearSelectedFile"
+                  >
+                    Eliminar
+                  </button>
                 </div>
                 <div v-else class="text-xs text-muted-foreground">
                   <span class="font-semibold text-foreground">Haz clic para adjuntar comprobante</span> o arrastra el archivo aquí
-                  <p class="text-[11px] text-slate-400 mt-0.5">Formatos admitidos: PDF, JPG, PNG o WEBP (máx. 10MB)</p>
+                  <p class="text-[11px] text-slate-400 mt-0.5">Formatos admitidos: PDF, JPG, PNG o WEBP (máx. 3MB)</p>
                 </div>
               </div>
             </div>
 
             <div v-if="currentLicenseFileUrl && !licenseFileName" class="mt-2 flex items-center justify-between text-xs p-2.5 rounded-xl bg-muted border border-border">
               <span class="text-muted-foreground flex items-center gap-1.5 font-medium">
-                <FileText class="w-4 h-4 text-mint-500" /> Testigo cargado previamente
+                <FileText class="w-4 h-4 text-mint-500" /> Cédula cargada previamente
               </span>
-              <a
-                :href="getFileUrl(currentLicenseFileUrl)"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-mint-600 hover:underline font-semibold"
-              >
-                Ver Documento
-              </a>
+              <div class="flex items-center gap-3">
+                <a
+                  :href="getFileUrl(currentLicenseFileUrl)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-mint-600 hover:underline font-semibold"
+                >
+                  Ver Documento
+                </a>
+                <button
+                  type="button"
+                  class="text-rose-500 hover:text-rose-700 font-bold text-xs flex items-center gap-1 hover:underline cursor-pointer"
+                  title="Eliminar documento del médico"
+                  @click="removeExistingWitness"
+                >
+                  <Trash2 class="w-3.5 h-3.5" /> Eliminar
+                </button>
+              </div>
             </div>
           </div>
 

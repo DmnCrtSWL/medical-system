@@ -4,6 +4,7 @@ import { comparePassword, hashPassword } from '../utils/password';
 import { generateToken } from '../utils/jwt';
 import { verifySetPasswordToken } from '../utils/token';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
+import { verifySmtpConnection, sendTestEmail } from '../services/email.service';
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -167,5 +168,56 @@ export const setPassword = async (req: Request, res: Response): Promise<void> =>
     const message = error instanceof Error ? error.message : 'Error interno al establecer la contraseña';
     console.error('Error en setPassword:', message);
     res.status(500).json({ message: 'Error interno al establecer la contraseña' });
+  }
+};
+
+export const checkSmtpStatus = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const isConfigured = Boolean(process.env.SMTP_HOST || process.env.SMTP_SERVICE);
+    const host = process.env.SMTP_HOST || 'No configurado';
+    const port = process.env.SMTP_PORT || '587';
+    const user = process.env.SMTP_USER ? '***' + process.env.SMTP_USER.slice(-4) : 'No configurado';
+    const from = process.env.SMTP_FROM || 'MedSys B2B <no-reply@medicalsystem.com>';
+    const frontendUrl = process.env.APP_FRONTEND_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
+
+    const verification = await verifySmtpConnection();
+
+    res.status(200).json({
+      configured: isConfigured,
+      host,
+      port,
+      user,
+      from,
+      frontendUrl,
+      smtpStatus: verification,
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error al comprobar estado SMTP', error: error?.message });
+  }
+};
+
+export const sendTestEmailHandler = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { to } = req.body;
+    if (!to || typeof to !== 'string') {
+      res.status(400).json({ message: 'El correo electrónico destinatario "to" es requerido' });
+      return;
+    }
+
+    const result = await sendTestEmail(to);
+    if (!result.success) {
+      res.status(502).json({
+        message: 'No se pudo enviar el correo de prueba',
+        error: result.error,
+      });
+      return;
+    }
+
+    res.status(200).json({
+      message: `Correo de prueba enviado exitosamente a ${to}`,
+      messageId: result.messageId,
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error al procesar el envío de prueba', error: error?.message });
   }
 };

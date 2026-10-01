@@ -9,19 +9,20 @@ export interface SendSetPasswordEmailOptions {
 
 /**
  * Crea el transporter de nodemailer.
- * Si las variables de entorno de SMTP están presentes (ej. Mailtrap), las utiliza.
+ * Si las variables de entorno de SMTP están presentes (ej. Mailtrap, Gmail, SendGrid, SMTP corporativo), las utiliza.
  * De lo contrario, genera un transporter seguro para pruebas de desarrollo.
  */
-const createTransporter = () => {
+export const createTransporter = () => {
   const host = process.env.SMTP_HOST;
-  const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 2525;
+  const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
+  const service = process.env.SMTP_SERVICE;
+  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
 
-  if (host && user && pass) {
+  if (service && user && pass) {
     return nodemailer.createTransport({
-      host,
-      port,
+      service,
       auth: {
         user,
         pass,
@@ -29,15 +30,30 @@ const createTransporter = () => {
     });
   }
 
+  if (host && user && pass) {
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: {
+        user,
+        pass,
+      },
+      tls: {
+        rejectUnauthorized: process.env.NODE_ENV === 'production',
+      },
+    });
+  }
+
   // Fallback para pruebas en desarrollo: simula transporte o salida en log
   return nodemailer.createTransport({
-    host: 'smtp.mailtrap.io',
-    port: 2525,
+    host: host || 'smtp.mailtrap.io',
+    port,
+    secure: false,
     auth: {
-      user: 'dev_user_mock',
-      pass: 'dev_pass_mock',
+      user: user || 'dev_user_mock',
+      pass: pass || 'dev_pass_mock',
     },
-    // En ausencia de credenciales reales activas, no arroja fallo no controlado
   });
 };
 
@@ -194,14 +210,15 @@ export const sendSetPasswordEmail = async ({
   token,
   roleOrEntity = 'Usuario',
 }: SendSetPasswordEmailOptions): Promise<{ success: boolean; messageId?: string; previewUrl?: string }> => {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-  const setPasswordUrl = `${frontendUrl}/set-password?token=${encodeURIComponent(token)}`;
+  const frontendUrl = process.env.APP_FRONTEND_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
+  const cleanBaseUrl = frontendUrl.replace(/\/$/, '');
+  const setPasswordUrl = `${cleanBaseUrl}/set-password?token=${encodeURIComponent(token)}`;
 
   const html = buildSetPasswordHtml(name, setPasswordUrl, roleOrEntity);
   const subject = 'Bienvenido a MedSys - Configura tu contraseña de acceso';
 
-  // Si no hay SMTP configurado en dev, registramos el envío y el enlace de prueba en consola
-  if (!process.env.SMTP_HOST) {
+  // Si no hay host ni service configurado en dev, registramos el envío y el enlace de prueba en consola
+  if (!process.env.SMTP_HOST && !process.env.SMTP_SERVICE) {
     console.log(`\n📧 [EMAIL SERVICE - MOCK/DEV] Correo de activación emitido:`);
     console.log(`   Destinatario: ${to} (${name})`);
     console.log(`   Rol/Entidad: ${roleOrEntity}`);
@@ -219,11 +236,57 @@ export const sendSetPasswordEmail = async ({
       html,
     });
 
-    console.log(`📧 [EMAIL SERVICE] Correo enviado a ${to}: MessageId ${info.messageId}`);
+    console.log(`📧 [EMAIL SERVICE] Correo enviado exitosamente a ${to}: MessageId ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error(`❌ [EMAIL SERVICE ERROR] Fallo al enviar correo a ${to}:`, error);
     // Devolvemos el error de forma controlada sin tumbar la creación del usuario
     return { success: false };
+  }
+};
+
+/**
+ * Verifica la conectividad con el servidor SMTP configurado.
+ */
+export const verifySmtpConnection = async (): Promise<{ ok: boolean; message: string }> => {
+  if (!process.env.SMTP_HOST && !process.env.SMTP_SERVICE) {
+    return {
+      ok: false,
+      message: 'SMTP_HOST o SMTP_SERVICE no están configurados en el entorno (modo MOCK/DEV activo)',
+    };
+  }
+
+  try {
+    const transporter = createTransporter();
+    await transporter.verify();
+    return { ok: true, message: 'Conexión con el servidor SMTP verificada exitosamente' };
+  } catch (error: any) {
+    return { ok: false, message: error?.message || 'Error al conectar con el servidor SMTP' };
+  }
+};
+
+/**
+ * Envía un correo de prueba para validar el transporte y la recepción real.
+ */
+export const sendTestEmail = async (to: string): Promise<{ success: boolean; messageId?: string; error?: string }> => {
+  const frontendUrl = process.env.APP_FRONTEND_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
+  const cleanBaseUrl = frontendUrl.replace(/\/$/, '');
+  const dummyUrl = `${cleanBaseUrl}/set-password?token=test_token_verification_2026`;
+
+  const html = buildSetPasswordHtml('Usuario de Prueba', dummyUrl, 'Prueba de Sistema');
+  const subject = 'MedSys B2B - Prueba de Configuración de Correo';
+
+  try {
+    const transporter = createTransporter();
+    const info = await transporter.sendMail({
+      from: process.env.SMTP_FROM || '"MedSys B2B" <no-reply@medicalsystem.com>',
+      to,
+      subject,
+      html,
+    });
+
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'Error al enviar correo de prueba' };
   }
 };

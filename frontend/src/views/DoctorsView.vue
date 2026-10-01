@@ -35,7 +35,7 @@ const specialty = ref('');
 const licenseId = ref('');
 const university = ref('');
 const phone = ref('');
-const assignedCompanyName = ref('');
+const assignedCompanies = ref<{ id: string; name: string }[]>([]);
 const formError = ref('');
 const isSubmitting = ref(false);
 const successMessage = ref('');
@@ -70,7 +70,7 @@ const openCreateModal = () => {
   licenseId.value = '';
   university.value = '';
   phone.value = '';
-  assignedCompanyName.value = '';
+  assignedCompanies.value = [];
   licenseFile.value = null;
   licenseFileName.value = '';
   currentLicenseFileUrl.value = null;
@@ -87,7 +87,13 @@ const openEditModal = (doctor: Doctor) => {
   licenseId.value = doctor.licenseId || '';
   university.value = doctor.university || '';
   phone.value = doctor.phone || '';
-  assignedCompanyName.value = doctor.company ? doctor.company.name : '';
+  if (doctor.companies && doctor.companies.length > 0) {
+    assignedCompanies.value = doctor.companies;
+  } else if (doctor.company) {
+    assignedCompanies.value = [doctor.company];
+  } else {
+    assignedCompanies.value = [];
+  }
   licenseFile.value = null;
   licenseFileName.value = '';
   currentLicenseFileUrl.value = doctor.licenseFileUrl || null;
@@ -273,8 +279,7 @@ const handleDelete = async (id: string, doctorName: string) => {
 const getFileUrl = (url: string | null | undefined) => {
   if (!url) return '#';
   if (url.startsWith('http')) return url;
-  const baseUrl = import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'http://localhost:4000';
-  return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+  return url.startsWith('/') ? url : `/${url}`;
 };
 </script>
 
@@ -399,9 +404,15 @@ const getFileUrl = (url: string | null | undefined) => {
                     <span v-else class="text-[11px] text-slate-400 italic block">Sin testigo</span>
                   </td>
                   <td class="px-4 py-3.5">
-                    <div v-if="doctor.company" class="inline-flex items-center gap-1.5 text-xs text-foreground bg-muted/80 px-2.5 py-1 rounded-xl border border-border">
-                      <Building2 class="w-3.5 h-3.5 text-mint-500 shrink-0" />
-                      <span class="font-medium">{{ doctor.company.name }}</span>
+                    <div v-if="(doctor.companies && doctor.companies.length > 0) || doctor.company" class="flex flex-wrap gap-1.5 max-w-xs">
+                      <div
+                        v-for="comp in (doctor.companies && doctor.companies.length > 0 ? doctor.companies : [doctor.company!])"
+                        :key="comp.id"
+                        class="inline-flex items-center gap-1.5 text-xs text-foreground bg-muted/80 px-2.5 py-1 rounded-xl border border-border"
+                      >
+                        <Building2 class="w-3.5 h-3.5 text-mint-500 shrink-0" />
+                        <span class="font-medium">{{ comp.name }}</span>
+                      </div>
                     </div>
                     <span v-else class="text-xs text-slate-400 italic flex items-center gap-1">
                       <Building2 class="w-3.5 h-3.5 text-slate-300" />
@@ -490,18 +501,24 @@ const getFileUrl = (url: string | null | undefined) => {
             <Input v-model="phone" placeholder="Ej. 5551234567" maxlength="10" :disabled="isSubmitting" />
           </div>
 
-          <!-- Asignación de Empresa (Solo Lectura, gestionada por Contratos B2B) -->
-          <div v-if="editingDoctorId && assignedCompanyName" class="p-3.5 rounded-xl bg-muted/60 border border-border flex items-center justify-between">
-            <div class="space-y-0.5">
-              <span class="block text-[11px] font-bold text-muted-foreground uppercase">Empresa Asignada (Vía Contrato)</span>
-              <div class="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                <Building2 class="w-4 h-4 text-mint-600" />
-                <span>{{ assignedCompanyName }}</span>
+          <!-- Asignación de Empresas (Solo Lectura, gestionada por Contratos B2B) -->
+          <div v-if="editingDoctorId && assignedCompanies.length > 0" class="p-3.5 rounded-xl bg-muted/60 border border-border space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="block text-[11px] font-bold text-muted-foreground uppercase">Empresas Asignadas (Vía Contratos)</span>
+              <span class="text-xs text-mint-600 bg-mint-500/10 font-medium px-2 py-0.5 rounded-lg border border-mint-500/20">
+                {{ assignedCompanies.length }} {{ assignedCompanies.length === 1 ? 'Contrato Activo' : 'Contratos Activos' }}
+              </span>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-1">
+              <div
+                v-for="comp in assignedCompanies"
+                :key="comp.id"
+                class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-xl bg-background border border-border shadow-xs"
+              >
+                <Building2 class="w-3.5 h-3.5 text-mint-600" />
+                <span>{{ comp.name }}</span>
               </div>
             </div>
-            <span class="text-xs text-mint-600 bg-mint-500/10 font-medium px-2.5 py-1 rounded-lg border border-mint-500/20">
-              Contrato Activo
-            </span>
           </div>
 
           <div v-else-if="!editingDoctorId" class="text-xs text-muted-foreground bg-muted/30 p-3 rounded-xl border border-dashed border-border flex items-center gap-2">

@@ -7,23 +7,48 @@ import fs from 'fs';
 import path from 'path';
 import { sendSetPasswordEmail } from '../services/email.service';
 
+const doctorInclude = {
+  user: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+    },
+  },
+  company: true,
+  contracts: {
+    include: {
+      company: true,
+    },
+  },
+};
+
+const formatDoctor = (doctor: any) => {
+  const companiesMap = new Map<string, any>();
+  if (doctor.company) {
+    companiesMap.set(doctor.company.id, doctor.company);
+  }
+  if (Array.isArray(doctor.contracts)) {
+    doctor.contracts.forEach((contract: any) => {
+      if (contract.company) {
+        companiesMap.set(contract.company.id, contract.company);
+      }
+    });
+  }
+  return {
+    ...doctor,
+    companies: Array.from(companiesMap.values()),
+  };
+};
+
 export const getDoctors = async (_req: Request, res: Response): Promise<void> => {
   try {
     const doctors = await prisma.doctor.findMany({
       orderBy: { createdAt: 'desc' },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
-        company: true,
-      },
+      include: doctorInclude,
     });
-    res.status(200).json(doctors);
+    res.status(200).json(doctors.map(formatDoctor));
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Error fetching doctors';
     console.error('Error fetching doctors:', message);
@@ -36,17 +61,7 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
     const { id } = req.params;
     const doctor = await prisma.doctor.findUnique({
       where: { id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
-        company: true,
-      },
+      include: doctorInclude,
     });
 
     if (!doctor) {
@@ -54,7 +69,7 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    res.status(200).json(doctor);
+    res.status(200).json(formatDoctor(doctor));
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Error fetching doctor details';
     console.error('Error fetching doctor by ID:', message);
@@ -125,17 +140,7 @@ export const createDoctor = async (req: Request, res: Response): Promise<void> =
         phone: phone ? String(phone).trim() : null,
         companyId: null, // Asignado exclusivamente mediante contratos B2B
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
-        company: true,
-      },
+      include: doctorInclude,
     });
 
     // Disparar flujo de correo de activación de cuenta con token expirable (24 horas)
@@ -153,7 +158,7 @@ export const createDoctor = async (req: Request, res: Response): Promise<void> =
 
     res.status(201).json({
       message: 'Médico dado de alta exitosamente. Se ha enviado el enlace de activación por correo electrónico.',
-      doctor,
+      doctor: formatDoctor(doctor),
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Error interno al registrar al médico';
@@ -230,20 +235,10 @@ export const updateDoctor = async (req: Request, res: Response): Promise<void> =
         phone: phone !== undefined ? (phone ? String(phone).trim() : null) : existingDoctor.phone,
         // companyId se preserva intacto: se gestiona exclusivamente desde contratos B2B
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
-        company: true,
-      },
+      include: doctorInclude,
     });
 
-    res.status(200).json({ message: 'Médico actualizado exitosamente', doctor: updatedDoctor });
+    res.status(200).json({ message: 'Médico actualizado exitosamente', doctor: formatDoctor(updatedDoctor) });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Error interno al actualizar al médico';
     console.error('Error updating doctor:', message);

@@ -19,14 +19,12 @@ import {
   FileCheck,
 } from 'lucide-vue-next';
 import { useDoctorStore, type Doctor } from '../stores/doctors';
-import { useCompanyStore } from '../stores/companies';
 import { Card, CardContent } from '../components/ui/card';
 import Button from '../components/ui/Button.vue';
 import Input from '../components/ui/Input.vue';
 
 const router = useRouter();
 const doctorStore = useDoctorStore();
-const companyStore = useCompanyStore();
 
 const showModal = ref(false);
 const editingDoctorId = ref<string | null>(null);
@@ -37,7 +35,7 @@ const specialty = ref('');
 const licenseId = ref('');
 const university = ref('');
 const phone = ref('');
-const companyId = ref('');
+const assignedCompanyName = ref('');
 const formError = ref('');
 const isSubmitting = ref(false);
 const successMessage = ref('');
@@ -62,7 +60,6 @@ const removeExistingWitness = () => {
 
 onMounted(() => {
   doctorStore.fetchDoctors();
-  companyStore.fetchCompanies();
 });
 
 const openCreateModal = () => {
@@ -73,7 +70,7 @@ const openCreateModal = () => {
   licenseId.value = '';
   university.value = '';
   phone.value = '';
-  companyId.value = '';
+  assignedCompanyName.value = '';
   licenseFile.value = null;
   licenseFileName.value = '';
   currentLicenseFileUrl.value = null;
@@ -90,7 +87,7 @@ const openEditModal = (doctor: Doctor) => {
   licenseId.value = doctor.licenseId || '';
   university.value = doctor.university || '';
   phone.value = doctor.phone || '';
-  companyId.value = doctor.companyId || '';
+  assignedCompanyName.value = doctor.company ? doctor.company.name : '';
   licenseFile.value = null;
   licenseFileName.value = '';
   currentLicenseFileUrl.value = doctor.licenseFileUrl || null;
@@ -231,7 +228,6 @@ const handleSaveDoctor = async () => {
     if (trimmedLicenseId) formData.append('licenseId', trimmedLicenseId);
     if (trimmedUniversity) formData.append('university', trimmedUniversity);
     if (trimmedPhone) formData.append('phone', trimmedPhone);
-    if (companyId.value) formData.append('companyId', companyId.value);
     if (licenseFile.value) {
       formData.append('licenseFile', licenseFile.value);
     } else if (removeWitness.value) {
@@ -494,18 +490,23 @@ const getFileUrl = (url: string | null | undefined) => {
             <Input v-model="phone" placeholder="Ej. 5551234567" maxlength="10" :disabled="isSubmitting" />
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-muted-foreground uppercase mb-1">Asignar a Empresa Cliente B2B</label>
-            <select
-              v-model="companyId"
-              class="flex h-11 w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-mint-500 cursor-pointer"
-              :disabled="isSubmitting"
-            >
-              <option value="">-- Sin Asignar (General) --</option>
-              <option v-for="company in companyStore.companies" :key="company.id" :value="company.id">
-                {{ company.name }} {{ company.taxId ? `(${company.taxId})` : '' }}
-              </option>
-            </select>
+          <!-- Asignación de Empresa (Solo Lectura, gestionada por Contratos B2B) -->
+          <div v-if="editingDoctorId && assignedCompanyName" class="p-3.5 rounded-xl bg-muted/60 border border-border flex items-center justify-between">
+            <div class="space-y-0.5">
+              <span class="block text-[11px] font-bold text-muted-foreground uppercase">Empresa Asignada (Vía Contrato)</span>
+              <div class="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                <Building2 class="w-4 h-4 text-mint-600" />
+                <span>{{ assignedCompanyName }}</span>
+              </div>
+            </div>
+            <span class="text-xs text-mint-600 bg-mint-500/10 font-medium px-2.5 py-1 rounded-lg border border-mint-500/20">
+              Contrato Activo
+            </span>
+          </div>
+
+          <div v-else-if="!editingDoctorId" class="text-xs text-muted-foreground bg-muted/30 p-3 rounded-xl border border-dashed border-border flex items-center gap-2">
+            <Building2 class="w-4 h-4 text-muted-foreground shrink-0" />
+            <span>La asignación a empresas se realiza formalmente al generar un <strong>Contrato B2B</strong>.</span>
           </div>
 
           <!-- Subida de Testigo de Cédula Profesional (Foto o PDF) -->

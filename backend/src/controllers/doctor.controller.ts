@@ -64,7 +64,7 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
 
 export const createDoctor = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, email, specialty, licenseId, university, phone, companyId } = req.body;
+    const { name, email, specialty, licenseId, university, phone } = req.body;
 
     if (!name || typeof name !== 'string' || name.trim() === '') {
       res.status(400).json({ message: 'El nombre completo del médico es obligatorio' });
@@ -107,16 +107,6 @@ export const createDoctor = async (req: Request, res: Response): Promise<void> =
       userId = newUser.id;
     }
 
-    if (companyId) {
-      const companyExists = await prisma.company.findUnique({
-        where: { id: companyId },
-      });
-      if (!companyExists) {
-        res.status(404).json({ message: 'La empresa especificada no existe' });
-        return;
-      }
-    }
-
     // Determinar la URL o ruta del testigo de cédula
     let licenseFileUrl: string | null = null;
     if (req.file) {
@@ -133,7 +123,7 @@ export const createDoctor = async (req: Request, res: Response): Promise<void> =
         university: university ? String(university).trim() : null,
         licenseFileUrl,
         phone: phone ? String(phone).trim() : null,
-        companyId: companyId || null,
+        companyId: null, // Asignado exclusivamente mediante contratos B2B
       },
       include: {
         user: {
@@ -175,7 +165,7 @@ export const createDoctor = async (req: Request, res: Response): Promise<void> =
 export const updateDoctor = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { name, email, specialty, licenseId, university, phone, companyId } = req.body;
+    const { name, email, specialty, licenseId, university, phone } = req.body;
 
     const existingDoctor = await prisma.doctor.findUnique({
       where: { id },
@@ -193,16 +183,6 @@ export const updateDoctor = async (req: Request, res: Response): Promise<void> =
       });
       if (emailCheck) {
         res.status(409).json({ message: 'El correo electrónico ya está en uso por otro usuario' });
-        return;
-      }
-    }
-
-    if (companyId) {
-      const companyExists = await prisma.company.findUnique({
-        where: { id: companyId },
-      });
-      if (!companyExists) {
-        res.status(404).json({ message: 'La empresa especificada no existe' });
         return;
       }
     }
@@ -248,7 +228,7 @@ export const updateDoctor = async (req: Request, res: Response): Promise<void> =
         university: university !== undefined ? (university ? String(university).trim() : null) : existingDoctor.university,
         licenseFileUrl: updatedLicenseFileUrl,
         phone: phone !== undefined ? (phone ? String(phone).trim() : null) : existingDoctor.phone,
-        companyId: companyId !== undefined ? (companyId || null) : existingDoctor.companyId,
+        // companyId se preserva intacto: se gestiona exclusivamente desde contratos B2B
       },
       include: {
         user: {

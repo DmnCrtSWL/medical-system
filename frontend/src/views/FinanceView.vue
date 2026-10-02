@@ -10,13 +10,18 @@ import {
   Trash2,
   Filter,
   Search,
-  Calendar,
   X,
+  FileText,
+  CheckCircle2,
+  Clock,
+  XCircle,
 } from 'lucide-vue-next';
 import {
   useFinanceStore,
+  type Transaction,
   type TransactionType,
   type TransactionCategory,
+  type TransactionStatus,
   type CreateTransactionPayload,
 } from '../stores/finance';
 import { useCompanyStore } from '../stores/companies';
@@ -33,6 +38,23 @@ const showModal = ref(false);
 const searchQuery = ref('');
 const filterType = ref<TransactionType | ''>('');
 const filterCategory = ref<TransactionCategory | ''>('');
+const filterStatus = ref<TransactionStatus | ''>('');
+const settlingId = ref<string | null>(null);
+const downloadingReceiptId = ref<string | null>(null);
+
+// Modal de Detalle de Transacción
+const showDetailModal = ref(false);
+const selectedTx = ref<Transaction | null>(null);
+
+const openDetailModal = (tx: Transaction) => {
+  selectedTx.value = tx;
+  showDetailModal.value = true;
+};
+
+const closeDetailModal = () => {
+  showDetailModal.value = false;
+  selectedTx.value = null;
+};
 
 // Formulario de nueva transacción
 const form = ref<CreateTransactionPayload>({
@@ -76,16 +98,19 @@ const formatDate = (dateStr: string): string => {
 
 // Filtrar transacciones en cliente
 const filteredTransactions = computed(() => {
+  const q = (searchQuery.value || '').toLowerCase().trim();
   return financeStore.transactions.filter((tx) => {
     const matchesSearch =
-      tx.description.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      (tx.company?.name && tx.company.name.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
-      (tx.doctor?.user?.name && tx.doctor.user.name.toLowerCase().includes(searchQuery.value.toLowerCase()));
+      !q ||
+      tx.description.toLowerCase().includes(q) ||
+      (tx.company?.name && tx.company.name.toLowerCase().includes(q)) ||
+      (tx.doctor?.user?.name && tx.doctor.user.name.toLowerCase().includes(q));
 
     const matchesType = !filterType.value || tx.type === filterType.value;
     const matchesCategory = !filterCategory.value || tx.category === filterCategory.value;
+    const matchesStatus = !filterStatus.value || (tx.status || 'COMPLETED') === filterStatus.value;
 
-    return matchesSearch && matchesType && matchesCategory;
+    return Boolean(matchesSearch && matchesType && matchesCategory && matchesStatus);
   });
 });
 
@@ -129,6 +154,31 @@ const handleCreateTransaction = async () => {
 const handleDelete = async (id: string, description: string) => {
   if (confirm(`¿Estás seguro de eliminar la transacción "${description}"?`)) {
     await financeStore.deleteTransaction(id);
+  }
+};
+
+// Liquidar transacción pendiente
+const handleSettle = async (id: string) => {
+  if (confirm('¿Confirmas que el pago bancario ha sido verificado para liquidar este movimiento y emitir el comprobante oficial?')) {
+    settlingId.value = id;
+    try {
+      await financeStore.settleTransaction(id);
+      if (selectedTx.value && selectedTx.value.id === id) {
+        selectedTx.value.status = 'COMPLETED';
+      }
+    } finally {
+      settlingId.value = null;
+    }
+  }
+};
+
+// Descargar recibo de pago oficial en PDF
+const handleDownloadReceipt = async (id: string) => {
+  downloadingReceiptId.value = id;
+  try {
+    await financeStore.downloadReceipt(id);
+  } finally {
+    downloadingReceiptId.value = null;
   }
 };
 
@@ -274,6 +324,16 @@ const categoryLabels: Record<TransactionCategory, string> = {
             <option value="EQUIPMENT_MAINTENANCE" class="bg-card text-foreground">Mantenimiento & Equipo</option>
             <option value="OTHER" class="bg-card text-foreground">Otros Movimientos</option>
           </select>
+
+          <select
+            v-model="filterStatus"
+            class="bg-muted dark:bg-card border border-border text-foreground text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-mint-500"
+          >
+            <option value="" class="bg-card text-foreground">Todos los Estados</option>
+            <option value="COMPLETED" class="bg-card text-foreground">Liquidados</option>
+            <option value="PENDING" class="bg-card text-foreground">Pendientes</option>
+            <option value="CANCELLED" class="bg-card text-foreground">Cancelados</option>
+          </select>
         </div>
       </CardContent>
     </Card>
@@ -288,106 +348,311 @@ const categoryLabels: Record<TransactionCategory, string> = {
       </CardHeader>
 
       <CardContent class="p-0 overflow-x-auto">
-        <table class="w-full text-left text-sm text-muted-foreground transition-colors duration-300">
-          <thead class="bg-muted text-xs uppercase tracking-wider text-slate-400 font-semibold border-b border-border">
+        <table class="w-full text-left text-sm table-fixed text-muted-foreground transition-colors duration-300">
+          <thead class="bg-muted text-[11px] uppercase tracking-wider text-slate-400 font-semibold border-b border-border">
             <tr>
-              <th class="py-3.5 px-6">Fecha</th>
-              <th class="py-3.5 px-6">Concepto</th>
-              <th class="py-3.5 px-6">Categoría</th>
-              <th class="py-3.5 px-6">Entidad Asociada</th>
-              <th class="py-3.5 px-6">Tipo</th>
-              <th class="py-3.5 px-6 text-right">Monto ($ MXN)</th>
-              <th class="py-3.5 px-6 text-center">Acciones</th>
+              <th class="py-3 px-3 w-[85px]">Fecha</th>
+              <th class="py-3 px-3 w-[28%]">Concepto / Categoría</th>
+              <th class="py-3 px-3 w-[18%]">Entidad</th>
+              <th class="py-3 px-2 w-[110px] text-center">Tipo</th>
+              <th class="py-3 px-2 w-[120px] text-center">Estado</th>
+              <th class="py-3 px-4 w-[130px] text-right">Monto</th>
+              <th class="py-3 px-2 w-[75px] text-center">Acciones</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-black">
+          <tbody class="divide-y divide-slate-100 dark:divide-black text-xs sm:text-sm">
             <tr v-if="filteredTransactions.length === 0">
-              <td colspan="7" class="py-12 text-center text-slate-400">
+              <td colspan="7" class="py-12 text-center text-slate-400 text-sm">
                 No hay movimientos registrados que coincidan con la búsqueda.
               </td>
             </tr>
 
-            <tr v-for="tx in filteredTransactions" :key="tx.id" class="hover:bg-muted/80 transition-colors">
+            <tr
+              v-for="tx in filteredTransactions"
+              :key="tx.id"
+              class="hover:bg-muted/70 transition-colors cursor-pointer group"
+              title="Haz clic para ver el detalle completo del movimiento"
+              @click="openDetailModal(tx)"
+            >
               <!-- Fecha -->
-              <td class="py-4 px-6 font-medium text-muted-foreground transition-colors duration-300 whitespace-nowrap">
-                <div class="flex items-center gap-2">
-                  <Calendar class="w-4 h-4 text-slate-400" />
-                  {{ formatDate(tx.date) }}
+              <td class="py-3.5 px-3 font-medium text-xs text-muted-foreground whitespace-nowrap">
+                {{ formatDate(tx.date) }}
+              </td>
+
+              <!-- Concepto / Categoría (Jerarquía en 2 líneas) -->
+              <td class="py-3.5 px-3 min-w-0 overflow-hidden">
+                <div class="flex flex-col min-w-0">
+                  <span class="font-bold text-foreground text-xs sm:text-sm truncate group-hover:text-mint-600 transition-colors">
+                    {{ tx.description }}
+                  </span>
+                  <span class="text-[11px] text-muted-foreground mt-0.5 truncate">
+                    {{ categoryLabels[tx.category] || tx.category }}
+                  </span>
                 </div>
-              </td>
-
-              <!-- Concepto -->
-              <td class="py-4 px-6 font-bold text-foreground transition-colors duration-300">
-                {{ tx.description }}
-              </td>
-
-              <!-- Categoría -->
-              <td class="py-4 px-6 whitespace-nowrap">
-                <span class="bg-muted/80 text-muted-foreground transition-colors duration-300 px-2.5 py-1 rounded-lg text-xs font-semibold border border-border">
-                  {{ categoryLabels[tx.category] || tx.category }}
-                </span>
               </td>
 
               <!-- Entidad Asociada (Empresa o Doctor) -->
-              <td class="py-4 px-6 whitespace-nowrap">
-                <div v-if="tx.company" class="flex items-center gap-1.5 text-xs text-foreground font-semibold">
+              <td class="py-3.5 px-3 min-w-0 overflow-hidden">
+                <div v-if="tx.company" class="flex items-center gap-1.5 text-xs text-foreground font-semibold min-w-0" :title="tx.company.name">
                   <Building2 class="w-3.5 h-3.5 text-mint-600 shrink-0" />
-                  {{ tx.company.name }}
+                  <span class="truncate">{{ tx.company.name }}</span>
                 </div>
-                <div v-else-if="tx.doctor" class="flex items-center gap-1.5 text-xs text-foreground font-medium">
+                <div v-else-if="tx.doctor" class="flex items-center gap-1.5 text-xs text-foreground font-medium min-w-0" :title="tx.doctor.user?.name || 'Doctor'">
                   <Stethoscope class="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                  {{ tx.doctor.user?.name || 'Doctor' }}
+                  <span class="truncate">{{ tx.doctor.user?.name || 'Doctor' }}</span>
                 </div>
                 <span v-else class="text-slate-400 text-xs italic">-</span>
               </td>
 
               <!-- Tipo (Badge) -->
-              <td class="py-4 px-6 whitespace-nowrap">
+              <td class="py-3.5 px-2 text-center whitespace-nowrap">
                 <span
                   v-if="tx.type === 'INCOME'"
-                  class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-extrabold border border-emerald-200 inline-flex items-center gap-1"
+                  class="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold border border-emerald-200 dark:border-emerald-800/50 inline-flex items-center gap-1"
                 >
                   <TrendingUp class="w-3 h-3" /> Ingreso
                 </span>
                 <span
                   v-else-if="tx.type === 'HONORARIUM'"
-                  class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-extrabold border border-blue-200 inline-flex items-center gap-1"
+                  class="bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold border border-blue-200 dark:border-blue-800/50 inline-flex items-center gap-1"
                 >
                   <Stethoscope class="w-3 h-3" /> Honorario
                 </span>
                 <span
                   v-else
-                  class="bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-xs font-extrabold border border-rose-200 inline-flex items-center gap-1"
+                  class="bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold border border-rose-200 dark:border-rose-800/50 inline-flex items-center gap-1"
                 >
                   <TrendingDown class="w-3 h-3" /> Gasto
+                </span>
+              </td>
+
+              <!-- Estado (Badge) -->
+              <td class="py-3.5 px-2 text-center whitespace-nowrap">
+                <span
+                  v-if="tx.status === 'COMPLETED' || !tx.status"
+                  class="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 px-2.5 py-0.5 rounded-full text-[11px] font-bold border border-emerald-300 dark:border-emerald-700/50 inline-flex items-center gap-1"
+                >
+                  <CheckCircle2 class="w-3 h-3 text-emerald-500" /> Liquidado
+                </span>
+                <span
+                  v-else-if="tx.status === 'PENDING'"
+                  class="bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 px-2.5 py-0.5 rounded-full text-[11px] font-bold border border-amber-300 dark:border-amber-700/50 inline-flex items-center gap-1"
+                >
+                  <Clock class="w-3 h-3 text-amber-500 animate-pulse" /> Pendiente
+                </span>
+                <span
+                  v-else-if="tx.status === 'CANCELLED'"
+                  class="bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 px-2.5 py-0.5 rounded-full text-[11px] font-bold border border-rose-300 dark:border-rose-700/50 inline-flex items-center gap-1"
+                >
+                  <XCircle class="w-3 h-3 text-rose-500" /> Cancelado
                 </span>
               </td>
 
               <!-- Monto -->
               <td
                 :class="[
-                  'py-4 px-6 font-black text-right whitespace-nowrap text-base',
-                  tx.type === 'INCOME' ? 'text-emerald-600' : (tx.type === 'HONORARIUM' ? 'text-blue-600' : 'text-rose-600')
+                  'py-3.5 px-4 font-black text-right whitespace-nowrap text-xs sm:text-sm',
+                  tx.type === 'INCOME' ? 'text-emerald-600 dark:text-emerald-400' : (tx.type === 'HONORARIUM' ? 'text-blue-600' : 'text-rose-600 dark:text-rose-400')
                 ]"
               >
                 {{ tx.type === 'INCOME' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
               </td>
 
               <!-- Acciones -->
-              <td class="py-4 px-6 text-center whitespace-nowrap">
-                <button
-                  class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer"
-                  title="Eliminar movimiento"
-                  @click="handleDelete(tx.id, tx.description)"
-                >
-                  <Trash2 class="w-4 h-4" />
-                </button>
+              <td class="py-3.5 px-2 text-center whitespace-nowrap" @click.stop>
+                <div class="flex items-center justify-center gap-1.5">
+                  <!-- Liquidar (si está PENDING) -->
+                  <button
+                    v-if="tx.status === 'PENDING'"
+                    class="p-1.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition-all cursor-pointer"
+                    title="Confirmar ingreso bancario y liquidar pago"
+                    :disabled="settlingId === tx.id"
+                    @click.stop="handleSettle(tx.id)"
+                  >
+                    <CheckCircle2 class="w-4 h-4" />
+                  </button>
+
+                  <!-- Descargar Recibo (si está COMPLETED o es ingreso) -->
+                  <button
+                    v-if="tx.status === 'COMPLETED' || (!tx.status && tx.type === 'INCOME')"
+                    class="p-1.5 text-mint-600 hover:text-mint-700 hover:bg-mint-500/15 dark:hover:bg-mint-950/40 rounded-lg transition-all cursor-pointer"
+                    title="Descargar comprobante/recibo oficial en PDF"
+                    :disabled="downloadingReceiptId === tx.id"
+                    @click.stop="handleDownloadReceipt(tx.id)"
+                  >
+                    <FileText class="w-4 h-4" />
+                  </button>
+
+                  <!-- Eliminar -->
+                  <button
+                    class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-all cursor-pointer"
+                    title="Eliminar movimiento"
+                    @click.stop="handleDelete(tx.id, tx.description)"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
       </CardContent>
     </Card>
+
+    <!-- Modal Detalle Completo del Movimiento -->
+    <div
+      v-if="showDetailModal && selectedTx"
+      class="fixed inset-0 z-50 bg-navy-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+      @click.self="closeDetailModal"
+    >
+      <div class="bg-card transition-colors duration-300 rounded-3xl max-w-lg w-full p-6 md:p-8 shadow-2xl border border-border space-y-6 animate-in fade-in zoom-in duration-200">
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-border pb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-mint-500/10 text-mint-600 flex items-center justify-center">
+              <DollarSign class="w-6 h-6" />
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-foreground">Detalle del Movimiento</h3>
+              <p class="text-xs text-muted-foreground">Ficha contable y comprobante de liquidación</p>
+            </div>
+          </div>
+          <button
+            class="text-slate-400 hover:text-foreground transition-colors p-1.5 rounded-xl hover:bg-muted"
+            @click="closeDetailModal"
+          >
+            <X class="w-5 h-5" />
+          </button>
+        </div>
+
+        <!-- Hero Card (Monto + Estado) -->
+        <div class="bg-muted/50 dark:bg-muted/20 border border-border rounded-2xl p-5 flex items-center justify-between">
+          <div>
+            <span class="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Monto del Movimiento</span>
+            <h2
+              :class="[
+                'text-3xl font-black mt-1',
+                selectedTx.type === 'INCOME' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+              ]"
+            >
+              {{ selectedTx.type === 'INCOME' ? '+' : '-' }}{{ formatCurrency(selectedTx.amount) }}
+            </h2>
+          </div>
+          <div class="text-right flex flex-col items-end gap-1.5">
+            <span
+              v-if="selectedTx.status === 'COMPLETED' || !selectedTx.status"
+              class="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 px-3 py-1 rounded-full text-xs font-bold border border-emerald-300 dark:border-emerald-700/50 inline-flex items-center gap-1.5"
+            >
+              <CheckCircle2 class="w-3.5 h-3.5 text-emerald-500" /> Liquidado
+            </span>
+            <span
+              v-else-if="selectedTx.status === 'PENDING'"
+              class="bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 px-3 py-1 rounded-full text-xs font-bold border border-amber-300 dark:border-amber-700/50 inline-flex items-center gap-1.5"
+            >
+              <Clock class="w-3.5 h-3.5 text-amber-500 animate-pulse" /> Pendiente
+            </span>
+            <span
+              v-else-if="selectedTx.status === 'CANCELLED'"
+              class="bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 px-3 py-1 rounded-full text-xs font-bold border border-rose-300 dark:border-rose-700/50 inline-flex items-center gap-1.5"
+            >
+              <XCircle class="w-3.5 h-3.5 text-rose-500" /> Cancelado
+            </span>
+            <span class="text-xs text-muted-foreground">{{ formatDate(selectedTx.date) }}</span>
+          </div>
+        </div>
+
+        <!-- Información Contable -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Información Contable</h4>
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div class="bg-card border border-border p-3.5 rounded-xl col-span-2 space-y-1">
+              <span class="text-muted-foreground text-[11px] font-semibold uppercase tracking-wider">Concepto</span>
+              <p class="font-bold text-foreground text-sm leading-snug">{{ selectedTx.description }}</p>
+            </div>
+
+            <div class="bg-card border border-border p-3 rounded-xl">
+              <span class="text-muted-foreground text-[11px] block font-semibold uppercase tracking-wider">Categoría</span>
+              <span class="font-bold text-foreground text-xs mt-0.5 block">{{ categoryLabels[selectedTx.category] || selectedTx.category }}</span>
+            </div>
+
+            <div class="bg-card border border-border p-3 rounded-xl">
+              <span class="text-muted-foreground text-[11px] block font-semibold uppercase tracking-wider">Tipo de Movimiento</span>
+              <span class="font-bold text-foreground text-xs mt-0.5 block">
+                {{ selectedTx.type === 'INCOME' ? 'Ingreso' : (selectedTx.type === 'HONORARIUM' ? 'Honorarios Médicos' : 'Gasto Operativo') }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Entidad Asociada (Empresa o Doctor) -->
+        <div v-if="selectedTx.company || selectedTx.doctor" class="space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">
+            {{ selectedTx.company ? 'Empresa Asociada' : 'Médico Asociado' }}
+          </h4>
+          <div v-if="selectedTx.company" class="bg-card border border-border p-4 rounded-xl space-y-2 text-xs">
+            <div class="flex items-center gap-2">
+              <Building2 class="w-4 h-4 text-mint-600 shrink-0" />
+              <span class="font-bold text-foreground text-sm">{{ selectedTx.company.name }}</span>
+            </div>
+            <p v-if="selectedTx.company.taxId" class="text-muted-foreground">
+              RFC Fiscal: <span class="font-mono text-foreground font-semibold">{{ selectedTx.company.taxId }}</span>
+            </p>
+          </div>
+          <div v-else-if="selectedTx.doctor" class="bg-card border border-border p-4 rounded-xl space-y-2 text-xs">
+            <div class="flex items-center gap-2">
+              <Stethoscope class="w-4 h-4 text-blue-500 shrink-0" />
+              <span class="font-bold text-foreground text-sm">{{ selectedTx.doctor.user?.name || 'Médico de Planta' }}</span>
+            </div>
+            <p v-if="selectedTx.doctor.specialty" class="text-muted-foreground">
+              Especialidad: <span class="text-foreground font-semibold">{{ selectedTx.doctor.specialty }}</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="flex items-center justify-between pt-4 border-t border-border">
+          <button
+            class="px-3 py-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+            @click="handleDelete(selectedTx.id, selectedTx.description); closeDetailModal();"
+          >
+            <Trash2 class="w-4 h-4" />
+            Eliminar
+          </button>
+
+          <div class="flex items-center gap-2">
+            <Button
+              variant="outline"
+              class="px-4 py-2 rounded-xl text-xs font-medium cursor-pointer"
+              @click="closeDetailModal"
+            >
+              Cerrar
+            </Button>
+
+            <!-- Botón Liquidar (si está PENDING) -->
+            <button
+              v-if="selectedTx.status === 'PENDING'"
+              class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+              :disabled="settlingId === selectedTx.id"
+              @click="handleSettle(selectedTx.id)"
+            >
+              <CheckCircle2 class="w-4 h-4" />
+              {{ settlingId === selectedTx.id ? 'Liquidando...' : 'Confirmar Liquidación' }}
+            </button>
+
+            <!-- Botón Descargar Recibo (si está COMPLETED o es ingreso) -->
+            <button
+              v-if="selectedTx.status === 'COMPLETED' || (!selectedTx.status && selectedTx.type === 'INCOME')"
+              class="px-4 py-2 bg-mint-500 hover:bg-mint-600 text-navy-950 font-bold rounded-xl text-xs transition-all shadow-md shadow-mint-500/20 flex items-center gap-1.5 cursor-pointer"
+              :disabled="downloadingReceiptId === selectedTx.id"
+              @click="handleDownloadReceipt(selectedTx.id)"
+            >
+              <FileText class="w-4 h-4" />
+              {{ downloadingReceiptId === selectedTx.id ? 'Descargando...' : 'Descargar Recibo (PDF)' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Modal Crear Movimiento Contable -->
     <div

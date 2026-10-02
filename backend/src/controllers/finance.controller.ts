@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
-import { PrismaClient, TransactionType, TransactionCategory } from '@prisma/client';
+import { PrismaClient, TransactionType, TransactionCategory, TransactionStatus } from '@prisma/client';
+import { generateReceiptPdf, PaymentReceiptData } from '../utils/receiptPdfGenerator';
+import { sendPaymentReceiptEmail } from '../services/email.service';
 
 const prisma = new PrismaClient();
 
@@ -332,5 +334,196 @@ export const getFinancialSummary = async (_req: Request, res: Response): Promise
     const err = error as Error;
     const response: ApiErrorResponse = { error: err.message || 'Error al calcular el resumen financiero' };
     res.status(500).json(response);
+  }
+};
+
+/**
+ * 7. Descargar o previsualizar el Recibo Oficial en PDF para una transacción
+ */
+export const downloadTransactionReceipt = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const transaction = await prisma.transaction.findUnique({
+      where: { id },
+      include: {
+        company: true,
+        doctor: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!transaction) {
+      res.status(404).json({ error: 'Transacción no encontrada' });
+      return;
+    }
+
+    const monthNames = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    const txDate = new Date(transaction.date);
+    const periodLabel = `${monthNames[txDate.getMonth()]} ${txDate.getFullYear()}`;
+
+    const receiptData: PaymentReceiptData = {
+      transactionId: transaction.id,
+      date: transaction.date,
+      settledAt: transaction.updatedAt,
+      amount: transaction.amount,
+      periodLabel,
+      description: transaction.description,
+      company: transaction.company ? {
+        name: transaction.company.name,
+        legalName: transaction.company.legalName,
+        taxId: transaction.company.taxId,
+        address: transaction.company.address,
+        email: transaction.company.email,
+        phone: transaction.company.phone,
+      } : {
+        name: 'Cliente General / Mostrador',
+        legalName: 'Público en General',
+        taxId: 'XAXX010101000',
+        address: 'N/A',
+        email: 'N/A',
+        phone: 'N/A',
+      },
+      doctor: transaction.doctor ? {
+        name: transaction.doctor.user.name,
+        licenseId: transaction.doctor.licenseId,
+        specialty: transaction.doctor.specialty,
+      } : null,
+    };
+
+    const pdfBuffer = await generateReceiptPdf(receiptData);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="Recibo_Pago.pdf"');
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(pdfBuffer);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error al generar el recibo PDF';
+    console.error('Error al generar recibo PDF:', message);
+    res.status(500).json({ error: message });
+  }
+};
+
+/**
+ * 8. Liquidar transacción pendiente, generar folio y recibo, y enviar correo a la empresa
+ */
+export const settleTransaction = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const existingTx = await prisma.transaction.findUnique({
+      where: { id },
+      include: {
+        company: true,
+        doctor: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!existingTx) {
+      res.status(404).json({ error: 'Transacción no encontrada' });
+      return;
+    }
+
+    const receiptUrl = `/api/finance/transactions/${existingTx.id}/receipt`;
+
+    const updatedTx = await prisma.transaction.update({
+      where: { id },
+      data: {
+        status: TransactionStatus.COMPLETED,
+        receiptUrl,
+        updatedAt: new Date(),
+      },
+      include: {
+        company: true,
+        doctor: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Generar PDF y enviar correo institucional si hay empresa con correo
+    if (updatedTx.company) {
+      const monthNames = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+      ];
+      const txDate = new Date(updatedTx.date);
+      const periodLabel = `${monthNames[txDate.getMonth()]} ${txDate.getFullYear()}`;
+
+      const receiptData: PaymentReceiptData = {
+        transactionId: updatedTx.id,
+        date: updatedTx.date,
+        settledAt: updatedTx.updatedAt,
+        amount: updatedTx.amount,
+        periodLabel,
+        description: updatedTx.description,
+        company: {
+          name: updatedTx.company.name,
+          legalName: updatedTx.company.legalName,
+          taxId: updatedTx.company.taxId,
+          address: updatedTx.company.address,
+          email: updatedTx.company.email,
+          phone: updatedTx.company.phone,
+        },
+        doctor: updatedTx.doctor ? {
+          name: updatedTx.doctor.user.name,
+          licenseId: updatedTx.doctor.licenseId,
+          specialty: updatedTx.doctor.specialty,
+        } : null,
+      };
+
+      try {
+        const pdfBuffer = await generateReceiptPdf(receiptData);
+        if (updatedTx.company.email) {
+          await sendPaymentReceiptEmail(
+            updatedTx.company.email,
+            updatedTx.company.name,
+            periodLabel,
+            undefined,
+            updatedTx.amount,
+            pdfBuffer
+          );
+        }
+      } catch (receiptErr: unknown) {
+        const receiptErrMsg = receiptErr instanceof Error ? receiptErr.message : 'Error en emisión de recibo';
+        console.error('Error al generar/despachar recibo de pago:', receiptErrMsg);
+      }
+    }
+
+    res.status(200).json({
+      message: 'Transacción liquidada exitosamente y recibo emitido',
+      transaction: updatedTx,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error al liquidar la transacción';
+    console.error('Error al liquidar transacción:', message);
+    res.status(500).json({ error: message });
   }
 };

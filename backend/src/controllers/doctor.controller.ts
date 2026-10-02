@@ -6,6 +6,7 @@ import { generateSetPasswordToken } from '../utils/token';
 import fs from 'fs';
 import path from 'path';
 import { sendSetPasswordEmail } from '../services/email.service';
+import { Prisma } from '@prisma/client';
 
 const doctorInclude = {
   user: {
@@ -24,13 +25,16 @@ const doctorInclude = {
   },
 };
 
-const formatDoctor = (doctor: any) => {
-  const companiesMap = new Map<string, any>();
+type DoctorWithRelations = Prisma.DoctorGetPayload<{ include: typeof doctorInclude }>;
+type CompanyPayload = NonNullable<DoctorWithRelations['company']>;
+
+const formatDoctor = (doctor: DoctorWithRelations) => {
+  const companiesMap = new Map<string, CompanyPayload>();
   if (doctor.company) {
     companiesMap.set(doctor.company.id, doctor.company);
   }
   if (Array.isArray(doctor.contracts)) {
-    doctor.contracts.forEach((contract: any) => {
+    doctor.contracts.forEach((contract) => {
       if (contract.company) {
         companiesMap.set(contract.company.id, contract.company);
       }

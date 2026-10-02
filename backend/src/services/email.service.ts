@@ -260,8 +260,9 @@ export const verifySmtpConnection = async (): Promise<{ ok: boolean; message: st
     const transporter = createTransporter();
     await transporter.verify();
     return { ok: true, message: 'Conexión con el servidor SMTP verificada exitosamente' };
-  } catch (error: any) {
-    return { ok: false, message: error?.message || 'Error al conectar con el servidor SMTP' };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error al conectar con el servidor SMTP';
+    return { ok: false, message };
   }
 };
 
@@ -286,7 +287,8 @@ export const sendTestEmail = async (to: string): Promise<{ success: boolean; mes
     });
 
     return { success: true, messageId: info.messageId };
-  } catch (error: any) {
-    return { success: false, error: error?.message || 'Error al enviar correo de prueba' };
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : 'Error al enviar correo de prueba';
+    return { success: false, error: errorMsg };
   }
 };

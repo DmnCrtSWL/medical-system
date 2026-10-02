@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../co
 import Button from '../components/ui/Button.vue';
 import Input from '../components/ui/Input.vue';
 import api from '../services/api';
+import axios from 'axios';
 
 const route = useRoute();
 const router = useRouter();
@@ -72,9 +73,15 @@ const handleSetPassword = async () => {
     isDone.value = true;
     successMessage.value = '¡Contraseña configurada exitosamente! Redirigiendo al inicio de sesión...';
     setTimeout(() => router.push('/login'), 2500);
-  } catch (err: any) {
-    const msg = err?.response?.data?.message;
-    errorMessage.value = msg || 'Ocurrió un error al establecer la contraseña. Intenta de nuevo.';
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      const msg = err.response?.data?.message;
+      errorMessage.value = typeof msg === 'string' ? msg : 'Ocurrió un error al establecer la contraseña. Intenta de nuevo.';
+    } else if (err instanceof Error) {
+      errorMessage.value = err.message;
+    } else {
+      errorMessage.value = 'Ocurrió un error al establecer la contraseña. Intenta de nuevo.';
+    }
   } finally {
     isSubmitting.value = false;
   }

@@ -191,8 +191,9 @@ export const checkSmtpStatus = async (req: AuthenticatedRequest, res: Response):
       frontendUrl,
       smtpStatus: verification,
     });
-  } catch (error: any) {
-    res.status(500).json({ message: 'Error al comprobar estado SMTP', error: error?.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error desconocido al comprobar estado SMTP';
+    res.status(500).json({ message: 'Error al comprobar estado SMTP', error: message });
   }
 };
 
@@ -217,7 +218,8 @@ export const sendTestEmailHandler = async (req: AuthenticatedRequest, res: Respo
       message: `Correo de prueba enviado exitosamente a ${to}`,
       messageId: result.messageId,
     });
-  } catch (error: any) {
-    res.status(500).json({ message: 'Error al procesar el envío de prueba', error: error?.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error desconocido al procesar el envío de prueba';
+    res.status(500).json({ message: 'Error al procesar el envío de prueba', error: message });
   }
 };

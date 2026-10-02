@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../config/db';
 import { generateContractPdf } from '../utils/contractPdfGenerator';
 import { ContractStatus, ContractTariff, ContractDuration } from '@prisma/client';
+import { runContractAuditJob } from '../services/contractCron.service';
 
 const calculateEndDate = (startDate: Date, duration?: string | null): Date => {
   const end = new Date(startDate);
@@ -524,3 +525,25 @@ export const deleteContract = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ message: 'Error al eliminar el contrato' });
   }
 };
+
+/**
+ * Endpoint manual para ejecutar el barrido de cron (útil para auditoría inmediata y pruebas)
+ */
+export const triggerContractCronJob = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { referenceDate, forceCheckAll } = req.body;
+    const refDate = referenceDate ? new Date(referenceDate) : new Date();
+    const force = Boolean(forceCheckAll);
+
+    const summary = await runContractAuditJob(refDate, force);
+    res.status(200).json({
+      message: 'Barrido de auditoría de contratos ejecutado exitosamente',
+      summary,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error desconocido al ejecutar barrido de contratos';
+    console.error('Error al ejecutar barrido de contratos:', message);
+    res.status(500).json({ message: 'Error al ejecutar barrido de contratos', error: message });
+  }
+};
+

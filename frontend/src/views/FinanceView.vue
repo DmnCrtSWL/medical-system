@@ -292,7 +292,7 @@ const categoryLabels: Record<TransactionCategory, string> = {
           <thead class="bg-muted text-xs uppercase tracking-wider text-slate-400 font-semibold border-b border-border">
             <tr>
               <th class="py-3.5 px-6">Fecha</th>
-              <th class="py-3.5 px-6">Concepto</th>
+              <th class="py-3.5 px-6 min-w-[280px]">Concepto</th>
               <th class="py-3.5 px-6">Categoría</th>
               <th class="py-3.5 px-6">Entidad Asociada</th>
               <th class="py-3.5 px-6">Tipo</th>
@@ -317,7 +317,7 @@ const categoryLabels: Record<TransactionCategory, string> = {
               </td>
 
               <!-- Concepto -->
-              <td class="py-4 px-6 font-bold text-foreground transition-colors duration-300">
+              <td class="py-4 px-6 font-bold text-foreground transition-colors duration-300 min-w-[280px]">
                 {{ tx.description }}
               </td>
 

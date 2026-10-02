@@ -25,12 +25,17 @@ export interface DoctorRef {
   };
 }
 
+export type TransactionStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED';
+
 export interface Transaction {
   id: string;
   description: string;
   amount: number;
   type: TransactionType;
   category: TransactionCategory;
+  status: TransactionStatus;
+  folio?: string | null;
+  receiptUrl?: string | null;
   companyId?: string | null;
   doctorId?: string | null;
   date: string;
@@ -160,5 +165,57 @@ export const useFinanceStore = defineStore('finance', {
         this.loading = false;
       }
     },
+
+    async settleTransaction(id: string): Promise<boolean> {
+      this.loading = true;
+      this.error = null;
+      try {
+        await api.post(`/finance/${id}/settle`);
+        await Promise.all([this.fetchTransactions(), this.fetchSummary()]);
+        return true;
+      } catch (err: unknown) {
+        if (axios.isAxiosError(err) && err.response?.data?.error) {
+          this.error = err.response.data.error;
+        } else if (err instanceof Error) {
+          this.error = err.message;
+        } else {
+          this.error = 'Error al liquidar la transacción';
+        }
+        return false;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async downloadReceipt(id: string): Promise<void> {
+      try {
+        const response = await api.get(`/finance/${id}/receipt`, {
+          responseType: 'blob',
+        });
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+
+        // Abrir pestaña para previsualización directa
+        window.open(url, '_blank');
+
+        // Descarga de archivo
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'Recibo_Pago.pdf');
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } catch (err: unknown) {
+        if (axios.isAxiosError(err) && err.response?.data?.error) {
+          this.error = err.response.data.error;
+        } else if (err instanceof Error) {
+          this.error = err.message;
+        } else {
+          this.error = 'Error al descargar el recibo de pago';
+        }
+        alert(this.error);
+      }
+    },
   },
 });
+

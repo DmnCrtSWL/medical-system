@@ -193,7 +193,7 @@ export const processRecurringMonthlyCharges = async (
 
         const newTransaction = await prisma.transaction.create({
           data: {
-            description: `Cargo mensual contrato B2B: ${contract.company.name} - Periodo ${periodLabel}`,
+            description: `Iguala Mensual B2B - ${periodLabel}`,
             amount: chargeAmount,
             type: TransactionType.INCOME,
             category: TransactionCategory.B2B_CONTRACT,

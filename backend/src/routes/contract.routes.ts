@@ -6,6 +6,7 @@ import {
   downloadContractPdf,
   updateContract,
   deleteContract,
+  triggerContractCronJob,
 } from '../controllers/contract.controller';
 import { authenticateToken, authorizeRole } from '../middlewares/auth.middleware';
 
@@ -16,6 +17,7 @@ router.use(authenticateToken);
 router.use(authorizeRole(['ADMIN']));
 
 router.get('/', getContracts);
+router.post('/cron/trigger', triggerContractCronJob);
 router.get('/:id', getContractById);
 router.get('/:id/pdf', downloadContractPdf);
 router.post('/', createContract);

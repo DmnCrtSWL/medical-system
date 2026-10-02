@@ -1,11 +1,13 @@
 import app from './app';
 import { logger } from './utils/logger';
+import { initContractCron } from './services/contractCron.service';
 
 const PORT = process.env.PORT || 4000;
 
 const server = app.listen(PORT, () => {
   logger.info(`🚀 Servidor Backend iniciado exitosamente en http://localhost:${PORT}`);
   logger.info(`🏥 Health check disponible en http://localhost:${PORT}/api/health`);
+  initContractCron();
 });
 
 // Captura de Excepciones No Manejadas

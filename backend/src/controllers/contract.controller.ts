@@ -357,10 +357,11 @@ export const updateContract = async (req: Request, res: Response): Promise<void>
     });
 
     // Actualizar asignación del doctor a la empresa
-    if (cleanDoctorId && companyId) {
+    const targetCompanyId = companyId || existingContract.companyId;
+    if (cleanDoctorId && targetCompanyId) {
       await prisma.doctor.update({
         where: { id: cleanDoctorId },
-        data: { companyId },
+        data: { companyId: targetCompanyId },
       });
     }
 

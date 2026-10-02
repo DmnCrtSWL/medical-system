@@ -2,15 +2,67 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: medical_postgres
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_dev_secret
-      POSTGRES_DB: medical_system_db
+      POSTGRES_DB: ${POSTGRES_DB:-medical_db}
+      POSTGRES_USER: ${POSTGRES_USER:-medical_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medical_secure_password_2026}
     ports:
-      - '5432:5432'
+      - "${POSTGRES_PORT:-5438}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - medical_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medical_user} -d ${POSTGRES_DB:-medical_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - medical_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: medical_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-medical_user}:${POSTGRES_PASSWORD:-medical_secure_password_2026}@postgres:5432/${POSTGRES_DB:-medical_db}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-medical_super_secret_jwt_key_staging_2026}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+    ports:
+      - "${BACKEND_PORT:-3014}:4000"
+    volumes:
+      - medical_uploads_data:/app/uploads
+    networks:
+      - medical_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: medical_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-9193}:80"
+    networks:
+      - medical_network
 
 volumes:
-  postgres_data:
+  medical_postgres_data:
+    driver: local
+  medical_uploads_data:
+    driver: local
+
+networks:
+  medical_network:
+    driver: bridge

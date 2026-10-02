@@ -94,6 +94,33 @@ const formatDoctorTitle = (name: string) => {
   return /^dr\.?\s+/i.test(trimmed) ? trimmed : `Dr. ${trimmed}`;
 };
 
+const getDoctorOccupiedInfo = (docId: string) => {
+  const activeContract = contractStore.contracts.find(
+    (c) => c.doctorId === docId && c.status === 'ACTIVE' && c.id !== editingContractId.value
+  );
+  if (activeContract) {
+    return {
+      isOccupied: true,
+      companyName: activeContract.company?.name || 'otra empresa',
+    };
+  }
+  return { isOccupied: false, companyName: '' };
+};
+
+const companyHasActiveDoctor = computed(() => {
+  if (!companyId.value) return null;
+  const activeContract = contractStore.contracts.find(
+    (c) => c.companyId === companyId.value && c.status === 'ACTIVE' && c.doctorId && c.id !== editingContractId.value
+  );
+  if (activeContract) {
+    return {
+      hasDoctor: true,
+      doctorName: activeContract.doctor?.user?.name ? formatDoctorTitle(activeContract.doctor.user.name) : 'un médico',
+    };
+  }
+  return null;
+});
+
 const openCreateModal = () => {
   editingContractId.value = null;
   companyId.value = '';
@@ -453,6 +480,12 @@ const getDurationLabel = (d?: string | null) => {
           </div>
 
           <!-- Selección Empresa & Doctor -->
+          <!-- Aviso de Empresa con Médico Activo Previo -->
+          <div v-if="companyHasActiveDoctor" class="text-xs text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl flex items-center gap-2">
+            <AlertCircle class="w-4 h-4 shrink-0 text-amber-600" />
+            <span>Esta empresa ya cuenta con <strong>{{ companyHasActiveDoctor.doctorName }}</strong> asignado en un contrato activo.</span>
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-bold text-muted-foreground uppercase mb-1">
@@ -481,8 +514,14 @@ const getDurationLabel = (d?: string | null) => {
                 :disabled="isSubmitting"
               >
                 <option value="">-- Sin asignar / Asignar después --</option>
-                <option v-for="d in doctorStore.doctors" :key="d.id" :value="d.id">
+                <option
+                  v-for="d in doctorStore.doctors"
+                  :key="d.id"
+                  :value="d.id"
+                  :disabled="getDoctorOccupiedInfo(d.id).isOccupied"
+                >
                   {{ formatDoctorTitle(d.user.name) }} ({{ d.specialty || 'General' }})
+                  {{ getDoctorOccupiedInfo(d.id).isOccupied ? `— [Ocupado con ${getDoctorOccupiedInfo(d.id).companyName}]` : '— [Disponible]' }}
                 </option>
               </select>
             </div>

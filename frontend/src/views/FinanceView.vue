@@ -6,6 +6,7 @@ import {
   TrendingDown,
   Stethoscope,
   Building2,
+  Plus,
   PlusCircle,
   Trash2,
   Filter,
@@ -157,11 +158,10 @@ const categoryLabels: Record<TransactionCategory, string> = {
       </div>
 
       <Button
-        class="bg-mint-500 hover:bg-mint-600 text-foreground transition-colors duration-300 font-bold px-5 py-2.5 rounded-2xl shadow-lg shadow-mint-500/20 flex items-center gap-2 cursor-pointer transition-all shrink-0"
+        class="bg-mint-500 hover:bg-mint-600 text-white rounded-xl flex items-center gap-2 shadow-sm font-bold cursor-pointer"
         @click="openCreateModal"
       >
-        <PlusCircle class="w-5 h-5" />
-        Nuevo Movimiento
+        <Plus class="w-4 h-4" /> Nuevo Movimiento
       </Button>
     </header>
 

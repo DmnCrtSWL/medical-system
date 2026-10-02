@@ -3,25 +3,56 @@ import crypto from 'crypto';
 import prisma from '../config/db';
 import { hashPassword } from '../utils/password';
 import { generateSetPasswordToken } from '../utils/token';
+import fs from 'fs';
+import path from 'path';
 import { sendSetPasswordEmail } from '../services/email.service';
+import { Prisma } from '@prisma/client';
+
+const doctorInclude = {
+  user: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+    },
+  },
+  company: true,
+  contracts: {
+    include: {
+      company: true,
+    },
+  },
+};
+
+type DoctorWithRelations = Prisma.DoctorGetPayload<{ include: typeof doctorInclude }>;
+type CompanyPayload = NonNullable<DoctorWithRelations['company']>;
+
+const formatDoctor = (doctor: DoctorWithRelations) => {
+  const companiesMap = new Map<string, CompanyPayload>();
+  if (doctor.company) {
+    companiesMap.set(doctor.company.id, doctor.company);
+  }
+  if (Array.isArray(doctor.contracts)) {
+    doctor.contracts.forEach((contract) => {
+      if (contract.company) {
+        companiesMap.set(contract.company.id, contract.company);
+      }
+    });
+  }
+  return {
+    ...doctor,
+    companies: Array.from(companiesMap.values()),
+  };
+};
 
 export const getDoctors = async (_req: Request, res: Response): Promise<void> => {
   try {
     const doctors = await prisma.doctor.findMany({
       orderBy: { createdAt: 'desc' },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
-        company: true,
-      },
+      include: doctorInclude,
     });
-    res.status(200).json(doctors);
+    res.status(200).json(doctors.map(formatDoctor));
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Error fetching doctors';
     console.error('Error fetching doctors:', message);
@@ -34,17 +65,7 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
     const { id } = req.params;
     const doctor = await prisma.doctor.findUnique({
       where: { id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
-        company: true,
-      },
+      include: doctorInclude,
     });
 
     if (!doctor) {
@@ -52,7 +73,7 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    res.status(200).json(doctor);
+    res.status(200).json(formatDoctor(doctor));
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Error fetching doctor details';
     console.error('Error fetching doctor by ID:', message);
@@ -62,7 +83,7 @@ export const getDoctorById = async (req: Request, res: Response): Promise<void> 
 
 export const createDoctor = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, email, specialty, licenseId, university, phone, companyId } = req.body;
+    const { name, email, specialty, licenseId, university, phone } = req.body;
 
     if (!name || typeof name !== 'string' || name.trim() === '') {
       res.status(400).json({ message: 'El nombre completo del médico es obligatorio' });
@@ -105,16 +126,6 @@ export const createDoctor = async (req: Request, res: Response): Promise<void> =
       userId = newUser.id;
     }
 
-    if (companyId) {
-      const companyExists = await prisma.company.findUnique({
-        where: { id: companyId },
-      });
-      if (!companyExists) {
-        res.status(404).json({ message: 'La empresa especificada no existe' });
-        return;
-      }
-    }
-
     // Determinar la URL o ruta del testigo de cédula
     let licenseFileUrl: string | null = null;
     if (req.file) {
@@ -131,19 +142,9 @@ export const createDoctor = async (req: Request, res: Response): Promise<void> =
         university: university ? String(university).trim() : null,
         licenseFileUrl,
         phone: phone ? String(phone).trim() : null,
-        companyId: companyId || null,
+        companyId: null, // Asignado exclusivamente mediante contratos B2B
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
-        company: true,
-      },
+      include: doctorInclude,
     });
 
     // Disparar flujo de correo de activación de cuenta con token expirable (24 horas)
@@ -161,7 +162,7 @@ export const createDoctor = async (req: Request, res: Response): Promise<void> =
 
     res.status(201).json({
       message: 'Médico dado de alta exitosamente. Se ha enviado el enlace de activación por correo electrónico.',
-      doctor,
+      doctor: formatDoctor(doctor),
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Error interno al registrar al médico';
@@ -173,7 +174,7 @@ export const createDoctor = async (req: Request, res: Response): Promise<void> =
 export const updateDoctor = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { name, email, specialty, licenseId, university, phone, companyId } = req.body;
+    const { name, email, specialty, licenseId, university, phone } = req.body;
 
     const existingDoctor = await prisma.doctor.findUnique({
       where: { id },
@@ -195,16 +196,6 @@ export const updateDoctor = async (req: Request, res: Response): Promise<void> =
       }
     }
 
-    if (companyId) {
-      const companyExists = await prisma.company.findUnique({
-        where: { id: companyId },
-      });
-      if (!companyExists) {
-        res.status(404).json({ message: 'La empresa especificada no existe' });
-        return;
-      }
-    }
-
     if (name || email) {
       await prisma.user.update({
         where: { id: existingDoctor.userId },
@@ -217,7 +208,22 @@ export const updateDoctor = async (req: Request, res: Response): Promise<void> =
 
     let updatedLicenseFileUrl = existingDoctor.licenseFileUrl;
     if (req.file) {
+      // Si subió un nuevo archivo y ya tenía uno previo, limpiar el anterior
+      if (existingDoctor.licenseFileUrl && existingDoctor.licenseFileUrl.startsWith('/uploads/licenses/')) {
+        const oldPath = path.join(__dirname, '../../uploads/licenses', path.basename(existingDoctor.licenseFileUrl));
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
       updatedLicenseFileUrl = `/uploads/licenses/${req.file.filename}`;
+    } else if (req.body.removeLicenseFile === 'true' || req.body.removeLicenseFile === true) {
+      if (existingDoctor.licenseFileUrl && existingDoctor.licenseFileUrl.startsWith('/uploads/licenses/')) {
+        const oldPath = path.join(__dirname, '../../uploads/licenses', path.basename(existingDoctor.licenseFileUrl));
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+      updatedLicenseFileUrl = null;
     } else if (req.body.licenseFileUrl !== undefined || req.body.licenseUrl !== undefined) {
       const providedUrl = req.body.licenseFileUrl || req.body.licenseUrl;
       updatedLicenseFileUrl = providedUrl ? String(providedUrl).trim() : null;
@@ -231,22 +237,12 @@ export const updateDoctor = async (req: Request, res: Response): Promise<void> =
         university: university !== undefined ? (university ? String(university).trim() : null) : existingDoctor.university,
         licenseFileUrl: updatedLicenseFileUrl,
         phone: phone !== undefined ? (phone ? String(phone).trim() : null) : existingDoctor.phone,
-        companyId: companyId !== undefined ? (companyId || null) : existingDoctor.companyId,
+        // companyId se preserva intacto: se gestiona exclusivamente desde contratos B2B
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
-        company: true,
-      },
+      include: doctorInclude,
     });
 
-    res.status(200).json({ message: 'Médico actualizado exitosamente', doctor: updatedDoctor });
+    res.status(200).json({ message: 'Médico actualizado exitosamente', doctor: formatDoctor(updatedDoctor) });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Error interno al actualizar al médico';
     console.error('Error updating doctor:', message);

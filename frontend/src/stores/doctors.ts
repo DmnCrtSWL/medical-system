@@ -24,6 +24,7 @@ export interface Doctor {
   updatedAt: string;
   user: DoctorUser;
   company?: Company | null;
+  companies?: Company[];
 }
 
 export interface CreateDoctorPayload {
@@ -75,9 +76,8 @@ export const useDoctorStore = defineStore('doctors', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      const isFormData = payload instanceof FormData;
       const response = await api.post('/doctors', payload, {
-        headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
+        headers: payload instanceof FormData ? { 'Content-Type': undefined } : undefined,
       });
       doctors.value.unshift(response.data.doctor);
       return response.data.doctor;
@@ -96,9 +96,8 @@ export const useDoctorStore = defineStore('doctors', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      const isFormData = payload instanceof FormData;
       const response = await api.put(`/doctors/${id}`, payload, {
-        headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
+        headers: payload instanceof FormData ? { 'Content-Type': undefined } : undefined,
       });
       const updated = response.data.doctor;
       const index = doctors.value.findIndex((d) => d.id === id);

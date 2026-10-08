@@ -15,6 +15,7 @@ import {
 import {
   ArrowLeft,
   User,
+  Users,
   Building2,
   Activity,
   Heart,
@@ -27,6 +28,7 @@ import {
   Save,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   Hash,
   ChevronDown,
   Check,
@@ -43,9 +45,13 @@ interface NewConsultationScreenProps {
   user?: DoctorUser | null;
   initialPatientData?: {
     name: string;
+    firstName?: string;
+    lastName?: string;
     companyName?: string;
     employeeNumber?: string;
     age?: number;
+    gender?: 'MASCULINO' | 'FEMENINO' | 'OTRO';
+    allergies?: string;
   } | null;
   onBack: () => void;
   onSaveSuccess: () => void;
@@ -60,25 +66,62 @@ export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
   const { isDark, colors, toggleTheme } = useTheme();
 
   // Estado del Paciente y Empresa Asignada
-  const [patientName, setPatientName] = useState(initialPatientData?.name || '');
-  const [patientAge, setPatientAge] = useState(
+  const [patientFirstName, setPatientFirstName] = useState<string>(() => {
+    if (initialPatientData?.firstName) return initialPatientData.firstName;
+    if (initialPatientData?.name) {
+      const parts = initialPatientData.name.trim().split(' ');
+      return parts[0] || '';
+    }
+    return '';
+  });
+
+  const [patientLastName, setPatientLastName] = useState<string>(() => {
+    if (initialPatientData?.lastName) return initialPatientData.lastName;
+    if (initialPatientData?.name) {
+      const parts = initialPatientData.name.trim().split(' ');
+      return parts.slice(1).join(' ') || '';
+    }
+    return '';
+  });
+
+  const [patientAge, setPatientAge] = useState<string>(
     initialPatientData?.age ? String(initialPatientData.age) : ''
   );
+
+  const [gender, setGender] = useState<'MASCULINO' | 'FEMENINO' | 'OTRO'>(
+    initialPatientData?.gender || 'MASCULINO'
+  );
+
   const [companyName, setCompanyName] = useState<string>(
     initialPatientData?.companyName || 'McDonalds'
   );
-  const [employeeNumber, setEmployeeNumber] = useState(
+
+  const [employeeNumber, setEmployeeNumber] = useState<string>(
     initialPatientData?.employeeNumber || ''
   );
+
+  // Alergias y Notas Clínicas
+  const [allergies, setAllergies] = useState<string>('Ninguna conocida');
+  const [clinicalNotes, setClinicalNotes] = useState<string>('');
+
   const [isCompanyModalVisible, setIsCompanyModalVisible] = useState<boolean>(false);
 
   // Cargar empresa real asignada en la base de datos al montar la pantalla
   useEffect(() => {
     if (initialPatientData) {
-      if (initialPatientData.name) setPatientName(initialPatientData.name);
+      if (initialPatientData.firstName) {
+        setPatientFirstName(initialPatientData.firstName);
+      } else if (initialPatientData.name) {
+        const parts = initialPatientData.name.trim().split(' ');
+        setPatientFirstName(parts[0] || '');
+        setPatientLastName(parts.slice(1).join(' ') || '');
+      }
+      if (initialPatientData.lastName) setPatientLastName(initialPatientData.lastName);
       if (initialPatientData.companyName) setCompanyName(initialPatientData.companyName);
       if (initialPatientData.employeeNumber) setEmployeeNumber(initialPatientData.employeeNumber);
       if (initialPatientData.age) setPatientAge(String(initialPatientData.age));
+      if (initialPatientData.gender) setGender(initialPatientData.gender);
+      if (initialPatientData.allergies) setAllergies(initialPatientData.allergies);
       return;
     }
 
@@ -157,37 +200,48 @@ export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
   const handleSave = async () => {
     setValidationError(null);
 
-    // Validaciones obligatorias mínimas
-    if (!patientName.trim()) {
+    // Validaciones obligatorias mínimas (flujo clínico específico)
+    if (!patientFirstName.trim()) {
       setValidationError('El nombre del paciente es obligatorio.');
       return;
     }
-    if (!chiefComplaint.trim()) {
-      setValidationError('El motivo de la consulta es obligatorio.');
+    if (!patientLastName.trim()) {
+      setValidationError('Los apellidos del paciente son obligatorios.');
       return;
     }
-    if (!diagnosisDescription.trim()) {
-      setValidationError('El diagnóstico médico es obligatorio.');
+    if (!weightKg.trim()) {
+      setValidationError('El peso en Kg es obligatorio.');
       return;
     }
-    if (!treatmentPlan.trim()) {
-      setValidationError('El plan de tratamiento es obligatorio.');
+    if (!systolic.trim() || !diastolic.trim()) {
+      setValidationError('La presión arterial (T/A) sistólica y diastólica es obligatoria.');
+      return;
+    }
+    if (!clinicalNotes.trim() && !chiefComplaint.trim()) {
+      setValidationError('Las notas clínicas o motivo de consulta son obligatorios.');
       return;
     }
 
     setIsSaving(true);
 
     try {
+      const fullName = `${patientFirstName.trim()} ${patientLastName.trim()}`.trim();
+
       const payload: ClinicalConsultationInput = {
-        patientName: patientName.trim(),
+        patientName: fullName,
+        patientFirstName: patientFirstName.trim(),
+        patientLastName: patientLastName.trim(),
         patientAge: patientAge ? parseInt(patientAge, 10) : undefined,
+        gender,
         companyName: companyName.trim(),
         employeeNumber: employeeNumber ? employeeNumber.trim() : undefined,
-        chiefComplaint: chiefComplaint.trim(),
-        symptoms: symptoms.trim(),
-        diagnosisDescription: diagnosisDescription.trim(),
-        treatmentPlan: treatmentPlan.trim(),
-        prescriptionNotes: prescriptionNotes.trim() || undefined,
+        chiefComplaint: chiefComplaint.trim() || clinicalNotes.trim().slice(0, 80) || 'Consulta médica ocupacional',
+        symptoms: symptoms.trim() || clinicalNotes.trim(),
+        diagnosisDescription: diagnosisDescription.trim() || 'Evaluación médica ocupacional',
+        treatmentPlan: treatmentPlan.trim() || clinicalNotes.trim() || 'Indicaciones y reposo según evolución clínica',
+        prescriptionNotes: prescriptionNotes.trim() || (allergies.trim() ? `Alergias: ${allergies.trim()}` : undefined),
+        allergies: allergies.trim(),
+        clinicalNotes: clinicalNotes.trim(),
         vitalSigns: {
           bloodPressureSystolic: systolic ? parseInt(systolic, 10) : undefined,
           bloodPressureDiastolic: diastolic ? parseInt(diastolic, 10) : undefined,
@@ -351,31 +405,60 @@ export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Nombre Completo */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-              Nombre del Paciente <Text style={{ color: colors.dangerText }}>*</Text>
-            </Text>
-            <View
-              style={[
-                styles.inputWrapper,
-                {
-                  backgroundColor: colors.inputBackground,
-                  borderColor: colors.inputBorder,
-                },
-              ]}
-            >
-              <User size={18} color={colors.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.textInput, { color: colors.inputText }]}
-                placeholder="Ej. Juan Pérez García"
-                placeholderTextColor={colors.inputPlaceholder}
-                value={patientName}
-                onChangeText={(text) => {
-                  setPatientName(text);
-                  if (validationError) setValidationError(null);
-                }}
-              />
+          {/* Nombre y Apellidos (Requerimiento Clínico) */}
+          <View style={styles.rowInputs}>
+            <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                Nombre(s) <Text style={{ color: colors.dangerText }}>*</Text>
+              </Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  {
+                    backgroundColor: colors.inputBackground,
+                    borderColor: colors.inputBorder,
+                  },
+                ]}
+              >
+                <User size={16} color={colors.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.textInput, { color: colors.inputText }]}
+                  placeholder="Ej. Juan"
+                  placeholderTextColor={colors.inputPlaceholder}
+                  value={patientFirstName}
+                  onChangeText={(text) => {
+                    setPatientFirstName(text);
+                    if (validationError) setValidationError(null);
+                  }}
+                />
+              </View>
+            </View>
+
+            <View style={[styles.inputGroup, { flex: 1.2 }]}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                Apellidos <Text style={{ color: colors.dangerText }}>*</Text>
+              </Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  {
+                    backgroundColor: colors.inputBackground,
+                    borderColor: colors.inputBorder,
+                  },
+                ]}
+              >
+                <User size={16} color={colors.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.textInput, { color: colors.inputText }]}
+                  placeholder="Ej. Pérez García"
+                  placeholderTextColor={colors.inputPlaceholder}
+                  value={patientLastName}
+                  onChangeText={(text) => {
+                    setPatientLastName(text);
+                    if (validationError) setValidationError(null);
+                  }}
+                />
+              </View>
             </View>
           </View>
 
@@ -428,6 +511,99 @@ export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
               </View>
             </View>
           </View>
+
+          {/* Selector de Sexo */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+              Sexo del Paciente <Text style={{ color: colors.dangerText }}>*</Text>
+            </Text>
+            <View style={styles.genderRow}>
+              {(['MASCULINO', 'FEMENINO', 'OTRO'] as const).map((g) => {
+                const isSelected = gender === g;
+                const label = g === 'MASCULINO' ? 'Masculino' : g === 'FEMENINO' ? 'Femenino' : 'Otro';
+                return (
+                  <TouchableOpacity
+                    key={g}
+                    style={[
+                      styles.genderOptionButton,
+                      {
+                        backgroundColor: isSelected ? colors.primaryLight : colors.surfaceSecondary,
+                        borderColor: isSelected ? colors.primary : colors.border,
+                      },
+                    ]}
+                    onPress={() => setGender(g)}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.genderOptionText,
+                        {
+                          color: isSelected ? colors.primary : colors.textSecondary,
+                          fontWeight: isSelected ? '700' : '500',
+                        },
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Alergias Conocidas */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+              Alergias Conocidas
+            </Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.inputBorder,
+                },
+              ]}
+            >
+              <AlertTriangle size={16} color={allergies && allergies !== 'Ninguna conocida' ? colors.warningText : colors.textMuted} style={styles.inputIcon} />
+              <TextInput
+                style={[styles.textInput, { color: colors.inputText }]}
+                placeholder="Ej. Penicilina, sulfas o ninguna"
+                placeholderTextColor={colors.inputPlaceholder}
+                value={allergies}
+                onChangeText={setAllergies}
+              />
+            </View>
+            {/* Chips rápidos de sugerencia */}
+            <View style={styles.allergyChipsRow}>
+              {['Ninguna conocida', 'Penicilina', 'AINEs / Aspirina', 'Sulfas'].map((chip) => (
+                <TouchableOpacity
+                  key={chip}
+                  style={[
+                    styles.allergyChip,
+                    {
+                      backgroundColor: allergies === chip ? colors.primaryLight : colors.surfaceSecondary,
+                      borderColor: allergies === chip ? colors.primary : colors.border,
+                    },
+                  ]}
+                  onPress={() => setAllergies(chip)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.allergyChipText,
+                      {
+                        color: allergies === chip ? colors.primary : colors.textSecondary,
+                        fontWeight: allergies === chip ? '700' : '500',
+                      },
+                    ]}
+                  >
+                    {chip}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         </View>
 
         {/* SECCIÓN 2: Somatometría y Signos Vitales */}
@@ -458,9 +634,65 @@ export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
             </Text>
           </View>
 
-          {/* Grid de Signos Vitales */}
+          {/* 1. Presión Arterial (T/A) - Fila Principal Destacada */}
+          <View
+            style={[
+              styles.vitalCardFull,
+              {
+                backgroundColor: colors.surfaceSecondary,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <View style={styles.vitalHeaderFull}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Heart size={15} color={colors.dangerText} style={{ marginRight: 6 }} />
+                <Text style={[styles.vitalLabel, { color: colors.textPrimary, fontWeight: '700' }]}>
+                  Presión Arterial (T/A) <Text style={{ color: colors.dangerText }}>*</Text>
+                </Text>
+              </View>
+              <Text style={{ fontSize: 11, color: colors.textMuted }}>Sistólica / Diastólica (mmHg)</Text>
+            </View>
+            <View style={styles.vitalSplitRow}>
+              <TextInput
+                style={[
+                  styles.vitalSmallInput,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.inputBorder,
+                    color: colors.inputText,
+                  },
+                ]}
+                placeholder="120 (Sistólica)"
+                placeholderTextColor={colors.inputPlaceholder}
+                keyboardType="numeric"
+                value={systolic}
+                onChangeText={setSystolic}
+                maxLength={3}
+              />
+              <Text style={{ color: colors.textMuted, marginHorizontal: 8, fontSize: 18, fontWeight: '700' }}>/</Text>
+              <TextInput
+                style={[
+                  styles.vitalSmallInput,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.inputBorder,
+                    color: colors.inputText,
+                  },
+                ]}
+                placeholder="80 (Diastólica)"
+                placeholderTextColor={colors.inputPlaceholder}
+                keyboardType="numeric"
+                value={diastolic}
+                onChangeText={setDiastolic}
+                maxLength={3}
+              />
+            </View>
+          </View>
+
+          {/* Grid de 2 Columnas para Signos Complementarios */}
           <View style={styles.vitalsGrid}>
-            {/* Presión Arterial */}
+            {/* Peso (kg) - Obligatorio */}
             <View
               style={[
                 styles.vitalCard,
@@ -471,46 +703,59 @@ export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
               ]}
             >
               <View style={styles.vitalHeader}>
-                <Heart size={15} color={colors.dangerText} style={{ marginRight: 4 }} />
+                <Scale size={15} color={colors.infoText} style={{ marginRight: 4 }} />
                 <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>
-                  Presión (mmHg)
+                  Peso (kg) <Text style={{ color: colors.dangerText }}>*</Text>
                 </Text>
               </View>
-              <View style={styles.vitalSplitRow}>
-                <TextInput
-                  style={[
-                    styles.vitalSmallInput,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: colors.inputBorder,
-                      color: colors.inputText,
-                    },
-                  ]}
-                  placeholder="120"
-                  placeholderTextColor={colors.inputPlaceholder}
-                  keyboardType="numeric"
-                  value={systolic}
-                  onChangeText={setSystolic}
-                  maxLength={3}
-                />
-                <Text style={{ color: colors.textMuted, marginHorizontal: 4 }}>/</Text>
-                <TextInput
-                  style={[
-                    styles.vitalSmallInput,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: colors.inputBorder,
-                      color: colors.inputText,
-                    },
-                  ]}
-                  placeholder="80"
-                  placeholderTextColor={colors.inputPlaceholder}
-                  keyboardType="numeric"
-                  value={diastolic}
-                  onChangeText={setDiastolic}
-                  maxLength={3}
-                />
+              <TextInput
+                style={[
+                  styles.vitalSingleInput,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.inputBorder,
+                    color: colors.inputText,
+                  },
+                ]}
+                placeholder="70.5"
+                placeholderTextColor={colors.inputPlaceholder}
+                keyboardType="decimal-pad"
+                value={weightKg}
+                onChangeText={setWeightKg}
+                maxLength={5}
+              />
+            </View>
+
+            {/* Talla (cm) */}
+            <View
+              style={[
+                styles.vitalCard,
+                {
+                  backgroundColor: colors.surfaceSecondary,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View style={styles.vitalHeader}>
+                <Ruler size={15} color="#A78BFA" style={{ marginRight: 4 }} />
+                <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>Talla (cm)</Text>
               </View>
+              <TextInput
+                style={[
+                  styles.vitalSingleInput,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.inputBorder,
+                    color: colors.inputText,
+                  },
+                ]}
+                placeholder="172"
+                placeholderTextColor={colors.inputPlaceholder}
+                keyboardType="numeric"
+                value={heightCm}
+                onChangeText={setHeightCm}
+                maxLength={3}
+              />
             </View>
 
             {/* Frecuencia Cardíaca */}
@@ -576,105 +821,53 @@ export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
                 maxLength={4}
               />
             </View>
+          </View>
 
-            {/* Peso */}
-            <View
-              style={[
-                styles.vitalCard,
-                {
-                  backgroundColor: colors.surfaceSecondary,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <View style={styles.vitalHeader}>
-                <Scale size={15} color={colors.infoText} style={{ marginRight: 4 }} />
-                <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>Peso (kg)</Text>
+          {/* IMC Calculado - Barra Inferior Full Width */}
+          <View
+            style={[
+              styles.vitalCardFull,
+              {
+                backgroundColor: colors.surfaceSecondary,
+                borderColor: colors.border,
+                marginTop: 2,
+              },
+            ]}
+          >
+            <View style={styles.vitalHeaderFull}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Activity size={15} color={colors.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.vitalLabel, { color: colors.textPrimary, fontWeight: '700' }]}>
+                  Índice de Masa Corporal (IMC)
+                </Text>
               </View>
-              <TextInput
-                style={[
-                  styles.vitalSingleInput,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.inputBorder,
-                    color: colors.inputText,
-                  },
-                ]}
-                placeholder="70.5"
-                placeholderTextColor={colors.inputPlaceholder}
-                keyboardType="decimal-pad"
-                value={weightKg}
-                onChangeText={setWeightKg}
-                maxLength={5}
-              />
-            </View>
-
-            {/* Talla */}
-            <View
-              style={[
-                styles.vitalCard,
-                {
-                  backgroundColor: colors.surfaceSecondary,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <View style={styles.vitalHeader}>
-                <Ruler size={15} color="#A78BFA" style={{ marginRight: 4 }} />
-                <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>Talla (cm)</Text>
-              </View>
-              <TextInput
-                style={[
-                  styles.vitalSingleInput,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.inputBorder,
-                    color: colors.inputText,
-                  },
-                ]}
-                placeholder="172"
-                placeholderTextColor={colors.inputPlaceholder}
-                keyboardType="numeric"
-                value={heightCm}
-                onChangeText={setHeightCm}
-                maxLength={3}
-              />
-            </View>
-
-            {/* Cálculo de IMC */}
-            <View
-              style={[
-                styles.vitalCard,
-                {
-                  backgroundColor: colors.surfaceSecondary,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <View style={styles.vitalHeader}>
-                <Activity size={15} color={colors.primary} style={{ marginRight: 4 }} />
-                <Text style={[styles.vitalLabel, { color: colors.textSecondary }]}>IMC Calc</Text>
-              </View>
-              {calculatedBmi ? (
-                <View style={styles.bmiResultRow}>
-                  <Text style={[styles.bmiValueText, { color: calculatedBmi.color }]}>
-                    {calculatedBmi.value}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.bmiCategoryText,
-                      { color: calculatedBmi.color, borderColor: calculatedBmi.color },
-                    ]}
-                  >
+              {calculatedBmi && (
+                <View
+                  style={[
+                    styles.bmiCategoryBadge,
+                    { borderColor: calculatedBmi.color, backgroundColor: colors.card },
+                  ]}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: calculatedBmi.color }}>
                     {calculatedBmi.category}
                   </Text>
                 </View>
-              ) : (
-                <Text style={[styles.bmiEmptyText, { color: colors.textMuted }]}>
-                  Ingresa peso y talla
-                </Text>
               )}
             </View>
+            {calculatedBmi ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2 }}>
+                <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+                  Resultado automático según peso y talla:
+                </Text>
+                <Text style={[styles.bmiValueText, { color: calculatedBmi.color, fontSize: 17 }]}>
+                  {calculatedBmi.value} kg/m²
+                </Text>
+              </View>
+            ) : (
+              <Text style={[styles.bmiEmptyText, { color: colors.textMuted, textAlign: 'left' }]}>
+                Ingresa peso y talla para obtener el cálculo automático del IMC.
+              </Text>
+            )}
           </View>
         </View>
 
@@ -704,6 +897,32 @@ export const NewConsultationScreen: React.FC<NewConsultationScreenProps> = ({
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
               3. Evaluación Clínica y Diagnóstico
             </Text>
+          </View>
+
+          {/* Notas Clínicas (Requerimiento Específico) */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+              Notas Clínicas y Evolución Médica <Text style={{ color: colors.dangerText }}>*</Text>
+            </Text>
+            <TextInput
+              style={[
+                styles.clinicalTextArea,
+                {
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.inputBorder,
+                  color: colors.inputText,
+                },
+              ]}
+              placeholder="Evolución clínica detallada, antecedentes, exploración física, hallazgos y notas del médico..."
+              placeholderTextColor={colors.inputPlaceholder}
+              value={clinicalNotes}
+              onChangeText={(text) => {
+                setClinicalNotes(text);
+                if (validationError) setValidationError(null);
+              }}
+              multiline
+              numberOfLines={4}
+            />
           </View>
 
           {/* Motivo de Consulta */}
@@ -1078,6 +1297,48 @@ const styles = StyleSheet.create({
     minHeight: 64,
     textAlignVertical: 'top',
   },
+  clinicalTextArea: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    fontSize: 14,
+    minHeight: 90,
+    textAlignVertical: 'top',
+  },
+  genderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 2,
+  },
+  genderOptionButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 3,
+  },
+  genderOptionText: {
+    fontSize: 12,
+  },
+  allergyChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+  },
+  allergyChip: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  allergyChipText: {
+    fontSize: 11,
+  },
   rowInputs: {
     flexDirection: 'row',
   },
@@ -1113,10 +1374,23 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
   },
+  vitalCardFull: {
+    width: '100%',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 10,
+  },
   vitalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 6,
+  },
+  vitalHeaderFull: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   vitalLabel: {
     fontSize: 11,
@@ -1128,20 +1402,28 @@ const styles = StyleSheet.create({
   },
   vitalSmallInput: {
     flex: 1,
-    height: 36,
-    borderRadius: 8,
+    minWidth: 0,
+    height: 40,
+    borderRadius: 10,
     borderWidth: 1,
     textAlign: 'center',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
   },
   vitalSingleInput: {
-    height: 36,
-    borderRadius: 8,
+    height: 40,
+    minWidth: 0,
+    borderRadius: 10,
     borderWidth: 1,
     textAlign: 'center',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
+  },
+  bmiCategoryBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
   },
   bmiResultRow: {
     alignItems: 'center',
@@ -1162,9 +1444,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   bmiEmptyText: {
-    fontSize: 10,
+    fontSize: 11,
     textAlign: 'center',
-    marginTop: 6,
+    marginTop: 4,
   },
   saveButton: {
     borderRadius: 16,

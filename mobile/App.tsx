@@ -22,9 +22,13 @@ type ActiveScreen = 'HOME' | 'PATIENTS_LIST' | 'PATIENT_HISTORY' | 'NEW_CONSULTA
 
 interface PrefilledPatientData {
   name: string;
+  firstName?: string;
+  lastName?: string;
   companyName?: string;
   employeeNumber?: string;
   age?: number;
+  gender?: 'MASCULINO' | 'FEMENINO' | 'OTRO';
+  allergies?: string;
 }
 
 function MainApp() {

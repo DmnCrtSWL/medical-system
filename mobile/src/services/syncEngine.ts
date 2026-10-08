@@ -80,14 +80,21 @@ export const syncEngine = {
           localId: c.localId,
           patientName: c.patientName,
           patientAge: c.patientAge,
+          gender: c.gender,
+          allergies: c.allergies,
+          clinicalNotes: c.clinicalNotes,
           companyName: c.companyName,
           employeeNumber: c.employeeNumber,
           chiefComplaint: c.chiefComplaint,
           symptoms: c.symptoms,
           vitalSigns: c.vitalSigns,
           diagnosisDescription: c.diagnosisDescription,
-          treatmentPlan: c.treatmentPlan,
-          prescriptionNotes: c.prescriptionNotes,
+          treatmentPlan: c.clinicalNotes
+            ? (c.treatmentPlan ? `${c.treatmentPlan}\n\n[Notas Clínicas]: ${c.clinicalNotes}` : c.clinicalNotes)
+            : c.treatmentPlan,
+          prescriptionNotes: c.allergies
+            ? (c.prescriptionNotes ? `${c.prescriptionNotes}\n[Alergias]: ${c.allergies}` : `[Alergias]: ${c.allergies}`)
+            : c.prescriptionNotes,
           createdAt: c.createdAt,
         })),
       };

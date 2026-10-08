@@ -69,6 +69,14 @@ export const authService = {
         throw new Error(errorMessage);
       }
 
+      // Validación estricta de rol: la app móvil es de uso exclusivo para médicos
+      const userRole = data.user.role?.toUpperCase();
+      if (userRole !== 'DOCTOR') {
+        throw new Error(
+          'Acceso restringido. Esta aplicación es exclusiva para médicos (el personal administrativo debe utilizar el portal web).'
+        );
+      }
+
       const authResponse: AuthResponse = {
         token: data.token,
         user: data.user,
@@ -85,8 +93,12 @@ export const authService = {
         if (err.message === 'Invalid credentials') {
           throw new Error('Credenciales inválidas. Verifica tu correo y contraseña.');
         }
-        if (err.message === 'Network request failed') {
-          throw new Error('Error de conexión con el servidor. Verifica tu red o servidor.');
+        if (
+          err.message === 'Network request failed' ||
+          err.message === 'Load failed' ||
+          err.message.includes('fetch')
+        ) {
+          throw new Error('Error de conexión con el servidor. Verifica tu red o que el backend esté encendido.');
         }
         throw err;
       }
@@ -107,6 +119,13 @@ export const authService = {
       }
 
       const user = JSON.parse(userJson) as DoctorUser;
+
+      // Asegurar que la sesión persistida pertenezca exclusivamente a un médico
+      if (user.role?.toUpperCase() !== 'DOCTOR') {
+        await this.logout();
+        return null;
+      }
+
       return { token, user };
     } catch {
       return null;

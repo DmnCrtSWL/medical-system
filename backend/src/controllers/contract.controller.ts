@@ -547,3 +547,133 @@ export const triggerContractCronJob = async (req: Request, res: Response): Promi
   }
 };
 
+/**
+ * Obtiene las consultas y empleados atendidos bajo la cobertura de un contrato corporativo
+ */
+export const getContractConsultations = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const contract = await prisma.contract.findUnique({
+      where: { id },
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        doctor: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!contract) {
+      res.status(404).json({ message: 'Contrato corporativo no encontrado' });
+      return;
+    }
+
+    // Consultas médicas realizadas para los empleados de la empresa del contrato
+    const consultations = await prisma.consultation.findMany({
+      where: {
+        companyId: contract.companyId,
+      },
+      orderBy: {
+        consultationDate: 'desc',
+      },
+      include: {
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            employeeNumber: true,
+            dateOfBirth: true,
+            email: true,
+            phone: true,
+          },
+        },
+        doctor: {
+          include: {
+            user: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const formattedConsultations = consultations.map((c) => {
+      let calculatedAge: number | null = null;
+      if (c.patient.dateOfBirth) {
+        const birth = new Date(c.patient.dateOfBirth);
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+          age--;
+        }
+        if (age > 0 && age < 130) {
+          calculatedAge = age;
+        }
+      }
+
+      return {
+        id: c.id,
+        localId: c.localId,
+        consultationDate: c.consultationDate,
+        patientId: c.patient.id,
+        patientName: `${c.patient.firstName} ${c.patient.lastName}`.trim(),
+        employeeNumber: c.patient.employeeNumber,
+        patientAge: calculatedAge,
+        diagnosisDescription: c.diagnosisDescription,
+        chiefComplaint: c.chiefComplaint,
+        treatmentPlan: c.treatmentPlan,
+        prescriptionNotes: c.prescriptionNotes,
+        doctorName: c.doctor?.user?.name || contract.doctor?.user?.name || 'Dr. Médico In-House',
+        vitalSigns: {
+          bloodPressureSystolic: c.bloodPressureSystolic,
+          bloodPressureDiastolic: c.bloodPressureDiastolic,
+          heartRate: c.heartRate,
+          temperature: c.temperature,
+          weightKg: c.weightKg,
+          heightCm: c.heightCm,
+          bmi: c.bmi,
+        },
+        status: c.status,
+      };
+    });
+
+    const uniquePatientsCount = new Set(consultations.map((c) => c.patientId)).size;
+
+    res.status(200).json({
+      contract: {
+        id: contract.id,
+        companyName: contract.company.name,
+        doctorName: contract.doctor?.user?.name || 'Sin médico asignado',
+        startDate: contract.startDate,
+        endDate: contract.endDate,
+        status: contract.status,
+        totalConsultations: formattedConsultations.length,
+        uniquePatientsCount,
+      },
+      consultations: formattedConsultations,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error al obtener empleados atendidos por contrato';
+    console.error('Error al obtener consultas del contrato:', message);
+    res.status(500).json({ message: 'Error interno al consultar atenciones del contrato', error: message });
+  }
+};
+

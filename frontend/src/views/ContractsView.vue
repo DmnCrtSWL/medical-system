@@ -403,28 +403,30 @@ const getDurationLabel = (d?: string | null) => {
 
         <!-- Table -->
         <div v-else class="w-full">
-          <table class="w-full text-left text-sm text-muted-foreground transition-colors duration-300">
+          <table class="w-full table-fixed text-left text-sm text-muted-foreground transition-colors duration-300">
             <thead class="bg-muted text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors duration-300 border-b border-border">
               <tr>
-                <th class="px-4 py-3.5 font-bold">Cliente B2B / Empresa</th>
-                <th class="px-4 py-3.5 font-bold">Médico Asignado</th>
-                <th class="px-4 py-3.5 font-bold">Tarifa & Costo</th>
-                <th class="px-4 py-3.5 font-bold">Duración & Vigencia</th>
-                <th class="px-4 py-3.5 font-bold">Estatus</th>
-                <th class="px-4 py-3.5 font-bold text-right">Acciones</th>
+                <th class="w-[25%] pl-6 pr-3 py-3.5 font-bold truncate">Cliente B2B / Empresa</th>
+                <th class="w-[21%] px-3 py-3.5 font-bold truncate">Médico Asignado</th>
+                <th class="w-[13%] px-3 py-3.5 font-bold whitespace-nowrap">Tarifa & Costo</th>
+                <th class="w-[18%] px-3 py-3.5 font-bold whitespace-nowrap">Duración & Vigencia</th>
+                <th class="w-[9%] px-3 py-3.5 font-bold text-center whitespace-nowrap">Estatus</th>
+                <th class="w-[14%] pl-2 pr-6 py-3.5 font-bold text-right whitespace-nowrap">Acciones</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-black font-medium">
               <tr v-for="contract in contractStore.contracts" :key="contract.id" class="hover:bg-muted/60 transition-colors">
                 <!-- Empresa -->
-                <td class="px-4 py-3.5">
-                  <div class="flex items-center gap-3">
+                <td class="pl-6 pr-3 py-3.5 truncate">
+                  <div class="flex items-center gap-3 min-w-0">
                     <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-sm shrink-0">
                       {{ (contract.company.legalName || contract.company.name).charAt(0).toUpperCase() }}
                     </div>
-                    <div class="min-w-0">
-                      <p class="font-bold text-foreground truncate">{{ contract.company.legalName || contract.company.name }}</p>
-                      <p v-if="contract.company.representativeName" class="text-xs text-muted-foreground truncate flex items-center gap-1">
+                    <div class="min-w-0 flex-1">
+                      <p class="font-bold text-foreground truncate" :title="contract.company.legalName || contract.company.name">
+                        {{ contract.company.legalName || contract.company.name }}
+                      </p>
+                      <p v-if="contract.company.representativeName" class="text-xs text-muted-foreground truncate flex items-center gap-1" :title="'Rep: ' + contract.company.representativeName">
                         <Building2 class="w-3 h-3 text-slate-400 shrink-0" />
                         Rep: {{ contract.company.representativeName }}
                       </p>
@@ -433,23 +435,23 @@ const getDurationLabel = (d?: string | null) => {
                 </td>
 
                 <!-- Médico Asignado -->
-                <td class="px-4 py-3.5">
+                <td class="px-3 py-3.5 truncate">
                   <div v-if="contract.doctor" class="space-y-0.5 min-w-0">
-                    <p class="font-bold text-foreground text-xs flex items-center gap-1.5 truncate">
+                    <p class="font-bold text-foreground text-xs flex items-center gap-1.5 truncate" :title="formatDoctorTitle(contract.doctor.user.name)">
                       <Stethoscope class="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                      {{ formatDoctorTitle(contract.doctor.user.name) }}
+                      <span class="truncate">{{ formatDoctorTitle(contract.doctor.user.name) }}</span>
                     </p>
                     <p class="text-xs text-muted-foreground truncate">
                       Céd: {{ contract.doctor.licenseId || 'En trámite' }}
                     </p>
                   </div>
                   <span v-else class="text-xs text-slate-400 italic flex items-center gap-1">
-                    <UserCheck class="w-3.5 h-3.5 text-slate-400" /> Sin médico asignado
+                    <UserCheck class="w-3.5 h-3.5 text-slate-400 shrink-0" /> Sin médico asignado
                   </span>
                 </td>
 
                 <!-- Tarifa & Monto -->
-                <td class="px-4 py-3.5 space-y-1">
+                <td class="px-3 py-3.5 whitespace-nowrap space-y-1">
                   <span
                     class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-bold border"
                     :class="getTariffBadge(contract.tariff).class"
@@ -463,19 +465,21 @@ const getDurationLabel = (d?: string | null) => {
                 </td>
 
                 <!-- Duración & Vigencia -->
-                <td class="px-4 py-3.5 space-y-0.5">
-                  <div class="inline-flex items-center gap-1 text-[11px] font-semibold text-foreground">
-                    <Clock class="w-3 h-3 text-slate-400" />
-                    <span>{{ getDurationLabel(contract.duration) }}</span>
-                  </div>
-                  <div class="text-xs text-muted-foreground flex items-center gap-1">
-                    <Calendar class="w-3 h-3 text-slate-400 shrink-0" />
-                    <span>{{ formatDate(contract.startDate) }} - {{ formatDate(contract.endDate) }}</span>
+                <td class="px-3 py-3.5 whitespace-nowrap">
+                  <div class="space-y-1">
+                    <span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-muted text-foreground border border-border/70">
+                      <Clock class="w-3 h-3 text-muted-foreground" />
+                      {{ getDurationLabel(contract.duration) }}
+                    </span>
+                    <div class="text-[11px] text-muted-foreground flex items-center gap-1 font-medium">
+                      <Calendar class="w-3 h-3 text-muted-foreground shrink-0" />
+                      <span>{{ formatDate(contract.startDate) }} &rarr; {{ formatDate(contract.endDate) }}</span>
+                    </div>
                   </div>
                 </td>
 
                 <!-- Estatus -->
-                <td class="px-4 py-3.5">
+                <td class="px-3 py-3.5 text-center whitespace-nowrap">
                   <span
                     v-if="contract.status === 'ACTIVE'"
                     class="inline-flex items-center bg-mint-500/10 text-mint-600 border border-mint-500/20 px-2.5 py-0.5 rounded-full text-xs font-semibold"
@@ -497,40 +501,40 @@ const getDurationLabel = (d?: string | null) => {
                 </td>
 
                 <!-- Acciones -->
-                <td class="px-4 py-3.5 text-right whitespace-nowrap">
-                  <div class="flex items-center justify-end gap-1">
+                <td class="pl-2 pr-6 py-3.5 text-right whitespace-nowrap">
+                  <div class="inline-flex items-center gap-0.5 bg-muted/40 dark:bg-muted/20 p-1 rounded-xl border border-border/70">
                     <Button
                       variant="ghost"
-                      class="text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 rounded-xl p-2 h-8 w-8 inline-flex items-center justify-center cursor-pointer transition-colors"
+                      class="text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 rounded-lg p-1 h-7 w-7 inline-flex items-center justify-center cursor-pointer transition-colors"
                       title="Auditar Empleados Atendidos"
                       @click="openConsultationsModal(contract)"
                     >
-                      <Users class="w-4 h-4" />
+                      <Users class="w-3.5 h-3.5" />
                     </Button>
                     <Button
                       variant="ghost"
-                      class="text-mint-600 hover:text-mint-700 hover:bg-mint-500/10 rounded-xl p-2 h-8 w-8 inline-flex items-center justify-center cursor-pointer transition-colors"
+                      class="text-mint-600 hover:text-mint-700 hover:bg-mint-500/10 rounded-lg p-1 h-7 w-7 inline-flex items-center justify-center cursor-pointer transition-colors"
                       title="Descargar Machote Oficial en PDF"
                       :disabled="contractStore.isDownloading"
                       @click="handleDownloadPdf(contract)"
                     >
-                      <FileDown class="w-4 h-4" />
+                      <FileDown class="w-3.5 h-3.5" />
                     </Button>
                     <Button
                       variant="ghost"
-                      class="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 rounded-xl p-2 h-8 w-8 inline-flex items-center justify-center cursor-pointer transition-colors"
+                      class="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 rounded-lg p-1 h-7 w-7 inline-flex items-center justify-center cursor-pointer transition-colors"
                       title="Editar Convenio"
                       @click="openEditModal(contract)"
                     >
-                      <Pencil class="w-4 h-4" />
+                      <Pencil class="w-3.5 h-3.5" />
                     </Button>
                     <Button
                       variant="ghost"
-                      class="text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 rounded-xl p-2 h-8 w-8 inline-flex items-center justify-center cursor-pointer transition-colors"
+                      class="text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 rounded-lg p-1 h-7 w-7 inline-flex items-center justify-center cursor-pointer transition-colors"
                       title="Eliminar Convenio"
                       @click="handleDelete(contract.id, contract.company.legalName || contract.company.name)"
                     >
-                      <Trash2 class="w-4 h-4" />
+                      <Trash2 class="w-3.5 h-3.5" />
                     </Button>
                   </div>
                 </td>

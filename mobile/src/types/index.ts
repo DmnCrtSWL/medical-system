@@ -40,6 +40,7 @@ export interface PatientRecord {
   id: string;
   firstName: string;
   lastName: string;
+  gender?: 'MASCULINO' | 'FEMENINO' | 'OTRO' | null;
   email?: string | null;
   phone?: string | null;
   dateOfBirth?: string | null;
@@ -60,7 +61,10 @@ export interface VitalSigns {
 
 export interface ClinicalConsultationInput {
   patientName: string;
+  patientFirstName?: string;
+  patientLastName?: string;
   patientAge?: number;
+  gender?: 'MASCULINO' | 'FEMENINO' | 'OTRO';
   companyName?: string;
   employeeNumber?: string;
   doctorId?: string;
@@ -72,6 +76,8 @@ export interface ClinicalConsultationInput {
   diagnosisDescription: string;
   treatmentPlan: string;
   prescriptionNotes?: string;
+  allergies?: string;
+  clinicalNotes?: string;
 }
 
 export interface ClinicalConsultation extends ClinicalConsultationInput {
@@ -95,6 +101,7 @@ export interface PatientSummary {
   name: string;
   firstName?: string;
   lastName?: string;
+  gender?: 'MASCULINO' | 'FEMENINO' | 'OTRO' | null;
   email?: string | null;
   phone?: string | null;
   dateOfBirth?: string | null;
@@ -118,6 +125,10 @@ export interface PatientHistoryItem {
   diagnosisDescription: string;
   treatmentPlan: string;
   prescriptionNotes?: string | null;
+  allergies?: string | null;
+  clinicalNotes?: string | null;
+  gender?: 'MASCULINO' | 'FEMENINO' | 'OTRO' | null;
+  patientAge?: number | null;
   status: string;
   doctorName: string;
   vitalSigns: VitalSigns;
@@ -129,6 +140,7 @@ export interface PatientHistoryResponse {
     name: string;
     firstName?: string;
     lastName?: string;
+    gender?: 'MASCULINO' | 'FEMENINO' | 'OTRO' | null;
     email?: string | null;
     phone?: string | null;
     dateOfBirth?: string | null;

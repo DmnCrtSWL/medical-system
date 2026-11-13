@@ -199,16 +199,16 @@ const handleDelete = async (id: string, companyName: string) => {
         </div>
 
         <!-- Table -->
-        <div v-else class="w-full">
-          <table class="w-full text-left text-sm text-muted-foreground">
+        <div v-else class="w-full overflow-x-auto">
+          <table class="w-full text-left text-sm text-muted-foreground min-w-[900px]">
             <thead class="bg-muted text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border">
               <tr>
-                <th class="px-4 py-3.5 font-bold">Empresa / Nombre Legal</th>
-                <th class="px-4 py-3.5 font-bold">Representante & Puesto</th>
-                <th class="px-4 py-3.5 font-bold">Contacto Corporativo</th>
-                <th class="px-4 py-3.5 font-bold">Domicilio Fiscal</th>
-                <th class="px-4 py-3.5 font-bold">Fecha Alta</th>
-                <th class="px-4 py-3.5 font-bold text-right">Acciones</th>
+                <th class="px-4 py-3.5 font-bold whitespace-nowrap">Empresa / Nombre Legal</th>
+                <th class="px-4 py-3.5 font-bold whitespace-nowrap">Representante & Puesto</th>
+                <th class="px-4 py-3.5 font-bold whitespace-nowrap">Contacto Corporativo</th>
+                <th class="px-4 py-3.5 font-bold whitespace-nowrap">Domicilio Fiscal</th>
+                <th class="px-4 py-3.5 font-bold whitespace-nowrap">Fecha Alta</th>
+                <th class="px-4 py-3.5 font-bold whitespace-nowrap text-right">Acciones</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-black font-medium">
@@ -245,10 +245,10 @@ const handleDelete = async (id: string, companyName: string) => {
                   </div>
                   <span v-if="!company.email && !company.phone" class="text-xs text-slate-400 italic">Sin contacto</span>
                 </td>
-                <td class="px-4 py-3.5">
-                  <div v-if="company.address" class="text-xs text-muted-foreground flex items-center gap-1.5 truncate max-w-xs" :title="company.address">
-                    <MapPin class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span class="truncate">{{ company.address }}</span>
+                <td class="px-4 py-3.5 max-w-[280px]">
+                  <div v-if="company.address" class="text-xs text-muted-foreground flex items-start gap-1.5" :title="company.address">
+                    <MapPin class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                    <span class="break-words line-clamp-2 leading-relaxed">{{ company.address }}</span>
                   </div>
                   <span v-else class="text-xs text-slate-400 italic">Sin domicilio registrado</span>
                 </td>

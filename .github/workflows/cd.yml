@@ -1,0 +1,43 @@
+name: CD / Automated VPS Deployment
+
+on:
+  push:
+    branches: [ "master" ]
+
+jobs:
+  deploy-vps:
+    name: Deploy to Production VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Execute Remote Deployment via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            echo "🚀 Iniciando despliegue continuo en VPS..."
+            cd /root/medical-system
+            
+            echo "📥 Actualizando código desde origin/master..."
+            git fetch origin master
+            git checkout master
+            git pull origin master
+            
+            echo "🔨 Reconstruyendo y actualizando contenedores Docker..."
+            docker compose build
+            docker compose up -d
+            
+            echo "⏳ Esperando 8 segundos para estabilización de servicios..."
+            sleep 8
+            
+            echo "🏥 Comprobando endpoint de salud de la API Backend..."
+            curl -f -s http://127.0.0.1:3014/api/health || (echo "❌ Backend healthcheck fallo" && exit 1)
+            
+            echo "🏥 Comprobando disponibilidad del servicio Frontend..."
+            curl -f -s -I http://127.0.0.1:9193 || (echo "❌ Frontend web check fallo" && exit 1)
+            
+            echo "✅ Despliegue en VPS finalizado exitosamente y verificado."

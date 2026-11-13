@@ -154,6 +154,52 @@ export const createContract = async (req: Request, res: Response): Promise<void>
       parsedStatus = status as ContractStatus;
     }
 
+    // Regla de Exclusividad 1 a 1: Si el contrato es activo y tiene médico asignado
+    if (parsedStatus === ContractStatus.ACTIVE && cleanDoctorId) {
+      // 1. Validar que el médico no posea ya otro contrato activo con otra empresa
+      const existingDoctorContract = await prisma.contract.findFirst({
+        where: {
+          doctorId: cleanDoctorId,
+          status: ContractStatus.ACTIVE,
+        },
+        include: {
+          company: true,
+          doctor: { include: { user: true } },
+        },
+      });
+
+      if (existingDoctorContract) {
+        const docName = existingDoctorContract.doctor?.user?.name || 'El médico';
+        const compName = existingDoctorContract.company?.name || 'otra empresa';
+        res.status(409).json({
+          message: `${docName} ya se encuentra asignado con exclusividad a la empresa "${compName}" en un contrato activo.`,
+        });
+        return;
+      }
+
+      // 2. Validar que la empresa no posea ya un médico titular en otro contrato activo
+      const existingCompanyContract = await prisma.contract.findFirst({
+        where: {
+          companyId,
+          status: ContractStatus.ACTIVE,
+          doctorId: { not: null },
+        },
+        include: {
+          doctor: { include: { user: true } },
+          company: true,
+        },
+      });
+
+      if (existingCompanyContract) {
+        const assignedDocName = existingCompanyContract.doctor?.user?.name || 'un médico';
+        const compName = existingCompanyContract.company?.name || 'La empresa';
+        res.status(409).json({
+          message: `${compName} ya cuenta con el médico titular ${assignedDocName} asignado en un contrato activo.`,
+        });
+        return;
+      }
+    }
+
     const contract = await prisma.contract.create({
       data: {
         companyId,
@@ -329,17 +375,68 @@ export const updateContract = async (req: Request, res: Response): Promise<void>
     const effectiveTariff = parsedTariff || existingContract.tariff;
     const newAmount = amount !== undefined ? Number(amount) : (parsedTariff ? calculateTariffAmount(effectiveTariff) : existingContract.amount);
 
+    const effectiveStatus = parsedStatus !== undefined ? parsedStatus : existingContract.status;
+    const targetCompanyId = companyId || existingContract.companyId;
+
+    // Regla de Exclusividad 1 a 1 en Modificación de Contrato
+    if (effectiveStatus === ContractStatus.ACTIVE && cleanDoctorId) {
+      // 1. Validar que el médico no esté en otro contrato activo
+      const conflictDoctorContract = await prisma.contract.findFirst({
+        where: {
+          id: { not: id },
+          doctorId: cleanDoctorId,
+          status: ContractStatus.ACTIVE,
+        },
+        include: {
+          company: true,
+          doctor: { include: { user: true } },
+        },
+      });
+
+      if (conflictDoctorContract) {
+        const docName = conflictDoctorContract.doctor?.user?.name || 'El médico';
+        const compName = conflictDoctorContract.company?.name || 'otra empresa';
+        res.status(409).json({
+          message: `${docName} ya se encuentra asignado con exclusividad a la empresa "${compName}" en un contrato activo.`,
+        });
+        return;
+      }
+
+      // 2. Validar que la empresa no posea otro médico titular activo en otro contrato
+      const conflictCompanyContract = await prisma.contract.findFirst({
+        where: {
+          id: { not: id },
+          companyId: targetCompanyId,
+          status: ContractStatus.ACTIVE,
+          doctorId: { not: null },
+        },
+        include: {
+          doctor: { include: { user: true } },
+          company: true,
+        },
+      });
+
+      if (conflictCompanyContract) {
+        const assignedDocName = conflictCompanyContract.doctor?.user?.name || 'un médico';
+        const compName = conflictCompanyContract.company?.name || 'La empresa';
+        res.status(409).json({
+          message: `${compName} ya cuenta con el médico titular ${assignedDocName} asignado en un contrato activo.`,
+        });
+        return;
+      }
+    }
+
     const updatedContract = await prisma.contract.update({
       where: { id },
       data: {
-        companyId: companyId !== undefined ? companyId : existingContract.companyId,
+        companyId: targetCompanyId,
         doctorId: cleanDoctorId,
         tariff: effectiveTariff,
         duration: effectiveDuration,
         startDate: newStartDate,
         endDate: newEndDate,
         amount: newAmount,
-        status: parsedStatus !== undefined ? parsedStatus : existingContract.status,
+        status: effectiveStatus,
       },
       include: {
         company: true,
@@ -357,12 +454,26 @@ export const updateContract = async (req: Request, res: Response): Promise<void>
       },
     });
 
-    // Actualizar asignación del doctor a la empresa
-    if (cleanDoctorId && companyId) {
+    // Actualizar asignación del doctor a la empresa para consistencia
+    if (cleanDoctorId && effectiveStatus === ContractStatus.ACTIVE) {
       await prisma.doctor.update({
         where: { id: cleanDoctorId },
-        data: { companyId },
+        data: { companyId: targetCompanyId },
       });
+    } else if (existingContract.doctorId && (cleanDoctorId !== existingContract.doctorId || effectiveStatus !== ContractStatus.ACTIVE)) {
+      const otherActiveContracts = await prisma.contract.findFirst({
+        where: {
+          id: { not: id },
+          doctorId: existingContract.doctorId,
+          status: ContractStatus.ACTIVE,
+        },
+      });
+      if (!otherActiveContracts) {
+        await prisma.doctor.update({
+          where: { id: existingContract.doctorId },
+          data: { companyId: null },
+        });
+      }
     }
 
     res.status(200).json({ message: 'Contrato actualizado exitosamente', contract: updatedContract });
@@ -389,6 +500,23 @@ export const deleteContract = async (req: Request, res: Response): Promise<void>
     await prisma.contract.delete({
       where: { id },
     });
+
+    // Si el médico eliminado no tiene otros contratos activos, desasociar companyId
+    if (existingContract.doctorId) {
+      const otherActiveContracts = await prisma.contract.findFirst({
+        where: {
+          id: { not: id },
+          doctorId: existingContract.doctorId,
+          status: ContractStatus.ACTIVE,
+        },
+      });
+      if (!otherActiveContracts) {
+        await prisma.doctor.update({
+          where: { id: existingContract.doctorId },
+          data: { companyId: null },
+        });
+      }
+    }
 
     res.status(200).json({ message: 'Contrato eliminado exitosamente del sistema' });
   } catch (error: unknown) {

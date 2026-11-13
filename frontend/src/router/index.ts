@@ -12,6 +12,11 @@ const router = createRouter({
       component: LoginView,
     },
     {
+      path: '/set-password',
+      name: 'set-password',
+      component: () => import('../views/SetPasswordView.vue'),
+    },
+    {
       path: '/',
       component: AdminLayout,
       meta: { requiresAuth: true },

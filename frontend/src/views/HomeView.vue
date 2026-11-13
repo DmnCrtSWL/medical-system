@@ -1,33 +1,68 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
-import { Building2, FileText, DollarSign, Bell, Users } from 'lucide-vue-next';
+import { Building2, FileText, DollarSign, Stethoscope } from 'lucide-vue-next';
 import Button from '../components/ui/Button.vue';
 import { useAuthStore } from '../stores/auth';
+import { useCompanyStore } from '../stores/companies';
+import { useContractStore } from '../stores/contracts';
+import { useDoctorStore } from '../stores/doctors';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const companyStore = useCompanyStore();
+const contractStore = useContractStore();
+const doctorStore = useDoctorStore();
 
 onMounted(() => {
   if (authStore.token && !authStore.user) {
     authStore.fetchProfile();
   }
+  companyStore.fetchCompanies();
+  contractStore.fetchContracts();
+  doctorStore.fetchDoctors();
 });
 
-const stats = [
-  { name: 'Empresas Afiliadas', value: '24', icon: Building2, color: 'text-blue-500', bg: 'bg-blue-100' },
-  { name: 'Contratos Activos', value: '18', icon: FileText, color: 'text-mint-500', bg: 'bg-mint-100' },
-  { name: 'Pacientes Corporativos', value: '856', icon: Users, color: 'text-purple-500', bg: 'bg-purple-100' },
-  { name: 'Ingresos B2B (Mes)', value: '$45,200', icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-100' },
-];
+const stats = computed(() => {
+  const activeContracts = contractStore.contracts.filter((c) => c.status === 'ACTIVE');
+  const monthlyRevenue = activeContracts.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
 
-const companies = [
-  { name: 'Tech Solutions Inc.', plan: 'Corporativo Premium', status: 'Activo', date: '21 Ago 2026' },
-  { name: 'Industrias Delta', plan: 'Plan Salud Básica', status: 'Renovación Pendiente', date: '15 Ago 2026' },
-  { name: 'Logística Express', plan: 'Corporativo Estándar', status: 'Activo', date: '10 Ago 2026' },
-  { name: 'Agencia Creativa', plan: 'Plan Pyme', status: 'En revisión', date: '05 Ago 2026' },
-];
+  return [
+    {
+      name: 'Empresas Afiliadas',
+      value: String(companyStore.companies.length),
+      icon: Building2,
+      color: 'text-blue-500',
+      bg: 'bg-blue-100 dark:bg-blue-950/40',
+    },
+    {
+      name: 'Contratos Activos',
+      value: String(activeContracts.length),
+      icon: FileText,
+      color: 'text-mint-500',
+      bg: 'bg-mint-100 dark:bg-mint-950/40',
+    },
+    {
+      name: 'Médicos en Plantilla',
+      value: String(doctorStore.doctors.length),
+      icon: Stethoscope,
+      color: 'text-purple-500',
+      bg: 'bg-purple-100 dark:bg-purple-950/40',
+    },
+    {
+      name: 'Póliza Mensual Activa',
+      value: new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(monthlyRevenue),
+      icon: DollarSign,
+      color: 'text-emerald-500',
+      bg: 'bg-emerald-100 dark:bg-emerald-950/40',
+    },
+  ];
+});
+
+const recentCompanies = computed(() => {
+  return companyStore.companies.slice(0, 5);
+});
 </script>
 
 <template>
@@ -37,10 +72,6 @@ const companies = [
         <h2 class="text-3xl font-bold text-foreground transition-colors duration-300">Resumen Corporativo B2B</h2>
         <p class="text-muted-foreground transition-colors duration-300 mt-1">Métricas y administración general de la clínica.</p>
       </div>
-      <button class="w-10 h-10 bg-card transition-colors duration-300 rounded-full flex items-center justify-center shadow-sm border border-border text-muted-foreground transition-colors duration-300 hover:text-mint-600 transition-colors relative">
-        <Bell class="w-5 h-5" />
-        <span class="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
-      </button>
     </header>
 
     <!-- Stats Grid -->
@@ -68,20 +99,25 @@ const companies = [
             <Button variant="outline" size="sm" class="text-mint-600 border-mint-200 hover:bg-mint-50" @click="router.push('/companies')">Gestionar</Button>
           </CardHeader>
           <CardContent class="p-0">
-            <div class="divide-y divide-slate-100 dark:divide-black">
-              <div v-for="(company, idx) in companies" :key="idx" class="p-4 flex items-center justify-between hover:bg-muted transition-colors">
-                <div class="flex items-center gap-4">
-                  <div class="w-1 h-10 rounded-full" :class="company.status === 'Activo' ? 'bg-emerald-400' : (company.status === 'En revisión' ? 'bg-blue-400' : 'bg-rose-400')"></div>
-                  <div>
-                    <p class="font-semibold text-foreground transition-colors duration-300">{{ company.name }}</p>
-                    <p class="text-sm text-muted-foreground transition-colors duration-300">{{ company.plan }}</p>
+            <div v-if="recentCompanies.length === 0" class="p-8 text-center text-muted-foreground text-sm">
+              No hay empresas registradas aún.
+            </div>
+            <div v-else class="divide-y divide-slate-100 dark:divide-black">
+              <div v-for="company in recentCompanies" :key="company.id" class="p-4 flex items-center justify-between hover:bg-muted transition-colors cursor-pointer" @click="router.push('/companies')">
+                <div class="flex items-center gap-4 min-w-0">
+                  <div class="w-1 h-10 rounded-full bg-mint-500 shrink-0"></div>
+                  <div class="min-w-0">
+                    <p class="font-semibold text-foreground truncate">{{ company.legalName || company.name }}</p>
+                    <p class="text-xs text-muted-foreground truncate">{{ company.representativeName || company.email || 'Convenio corporativo' }}</p>
                   </div>
                 </div>
-                <div class="text-right">
-                  <span :class="{'px-3 py-1 rounded-full text-xs font-semibold': true, 'bg-emerald-100 text-emerald-700': company.status === 'Activo', 'bg-blue-100 text-blue-700': company.status === 'En revisión', 'bg-rose-100 text-rose-700': company.status === 'Renovación Pendiente'}">
-                    {{ company.status }}
+                <div class="text-right shrink-0 ml-3">
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-mint-100 dark:bg-mint-950 text-mint-700 dark:text-mint-300">
+                    Afiliada
                   </span>
-                  <p class="text-xs text-slate-400 mt-2">Afiliado: {{ company.date }}</p>
+                  <p class="text-[11px] text-slate-400 mt-1">
+                    {{ new Date(company.createdAt).toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' }) }}
+                  </p>
                 </div>
               </div>
             </div>

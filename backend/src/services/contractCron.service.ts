@@ -1,7 +1,8 @@
 import cron, { ScheduledTask } from 'node-cron';
 import prisma from '../config/db';
-import { ContractStatus, TransactionType, TransactionCategory, ContractTariff } from '@prisma/client';
+import { ContractStatus, TransactionType, TransactionCategory, ContractTariff, TransactionStatus } from '@prisma/client';
 import logger from '../utils/logger';
+import { sendMonthlyPaymentReminderEmail } from './email.service';
 
 export interface ExpiredContractResult {
   contractId: string;
@@ -149,6 +150,7 @@ export const processRecurringMonthlyCharges = async (
           select: {
             id: true,
             name: true,
+            email: true,
           },
         },
         doctor: {
@@ -197,11 +199,27 @@ export const processRecurringMonthlyCharges = async (
             amount: chargeAmount,
             type: TransactionType.INCOME,
             category: TransactionCategory.B2B_CONTRACT,
+            status: TransactionStatus.PENDING,
             companyId: contract.companyId,
             doctorId: contract.doctorId,
             date: referenceDate,
           },
         });
+
+        // Enviar recordatorio cordial de fecha de corte a la empresa (monto dinámico, sin datos bancarios)
+        if (contract.company.email) {
+          try {
+            await sendMonthlyPaymentReminderEmail(
+              contract.company.email,
+              contract.company.name,
+              periodLabel,
+              chargeAmount
+            );
+          } catch (mailErr: unknown) {
+            const mailMsg = mailErr instanceof Error ? mailErr.message : 'Error al enviar recordatorio';
+            logger.warn(`[CRON:AVISO] No se pudo entregar recordatorio a ${contract.company.email}: ${mailMsg}`);
+          }
+        }
 
         const chargeResult: MonthlyChargeResult = {
           contractId: contract.id,
@@ -215,7 +233,7 @@ export const processRecurringMonthlyCharges = async (
 
         charges.push(chargeResult);
         logger.info(
-          `[CRON:AUDITORIA] Cargo mensual generado exitosamente: Transaccion=${newTransaction.id} | Empresa=${contract.company.name} | Monto=$${chargeAmount} | Periodo=${periodLabel}`
+          `[CRON:AUDITORIA] Cargo mensual generado (PENDING): TxId=${newTransaction.id} | Empresa=${contract.company.name} | Monto=$${chargeAmount} | Periodo=${periodLabel}`
         );
       } catch (contractErr: unknown) {
         const errMsg = contractErr instanceof Error ? contractErr.message : 'Error desconocido al procesar cargo';

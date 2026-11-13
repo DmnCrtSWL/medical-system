@@ -115,7 +115,7 @@ export const PatientsListScreen: React.FC<PatientsListScreenProps> = ({
 
           <View style={styles.headerTitleContainer}>
             <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-              Historial de Pacientes
+              Directorio de Pacientes
             </Text>
             <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
               {patients.length === 1
@@ -123,6 +123,24 @@ export const PatientsListScreen: React.FC<PatientsListScreenProps> = ({
                 : `${patients.length} pacientes registrados`}
             </Text>
           </View>
+
+          <TouchableOpacity
+            style={[
+              styles.headerAddButton,
+              {
+                backgroundColor: colors.primary,
+                shadowColor: colors.primary,
+              },
+            ]}
+            onPress={onNewConsultation}
+            activeOpacity={0.8}
+            accessibilityLabel="Registrar nuevo paciente"
+          >
+            <Plus size={16} color={colors.textInverse} style={{ marginRight: 4 }} />
+            <Text style={[styles.headerAddButtonText, { color: colors.textInverse }]}>
+              Nuevo
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Buscador Minimalista */}
@@ -395,6 +413,21 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 12,
     marginTop: 2,
+  },
+  headerAddButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  headerAddButtonText: {
+    fontSize: 12,
+    fontWeight: '800',
   },
   searchContainer: {
     flexDirection: 'row',

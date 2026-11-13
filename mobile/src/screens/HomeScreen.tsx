@@ -424,10 +424,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </View>
           <View style={styles.actionTextContainer}>
             <Text style={[styles.actionTitle, { color: colors.textPrimary }]}>
-              Historial de Pacientes
+              Directorio de Pacientes
             </Text>
             <Text style={[styles.actionDescription, { color: colors.textSecondary }]}>
-              Consulta expedientes clínicos e historial de visitas
+              Directorio y búsqueda ágil de expedientes clínicos
             </Text>
           </View>
           <ChevronRight size={20} color={colors.textMuted} />

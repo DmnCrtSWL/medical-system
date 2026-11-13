@@ -48,6 +48,45 @@ export interface UpdateContractPayload {
   status?: ContractStatus;
 }
 
+export interface ContractConsultationItem {
+  id: string;
+  localId?: string | null;
+  consultationDate: string;
+  patientId: string;
+  patientName: string;
+  employeeNumber?: string | null;
+  patientAge?: number | null;
+  diagnosisDescription: string;
+  chiefComplaint: string;
+  treatmentPlan: string;
+  prescriptionNotes?: string | null;
+  doctorName: string;
+  vitalSigns?: {
+    bloodPressureSystolic?: number | null;
+    bloodPressureDiastolic?: number | null;
+    heartRate?: number | null;
+    temperature?: number | null;
+    weightKg?: number | null;
+    heightCm?: number | null;
+    bmi?: number | null;
+  };
+  status: string;
+}
+
+export interface ContractConsultationsResponse {
+  contract: {
+    id: string;
+    companyName: string;
+    doctorName: string;
+    startDate: string;
+    endDate: string;
+    status: ContractStatus;
+    totalConsultations: number;
+    uniquePatientsCount: number;
+  };
+  consultations: ContractConsultationItem[];
+}
+
 export const useContractStore = defineStore('contracts', () => {
   const contracts = ref<Contract[]>([]);
   const isLoading = ref(false);
@@ -155,6 +194,18 @@ export const useContractStore = defineStore('contracts', () => {
     }
   };
 
+  const fetchContractConsultations = async (id: string): Promise<ContractConsultationsResponse> => {
+    try {
+      const response = await api.get<ContractConsultationsResponse>(`/contracts/${id}/consultations`);
+      return response.data;
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err) && err.response?.data?.message
+        ? err.response.data.message
+        : 'Error al consultar empleados atendidos del contrato.';
+      throw new Error(msg);
+    }
+  };
+
   return {
     contracts,
     isLoading,
@@ -165,5 +216,6 @@ export const useContractStore = defineStore('contracts', () => {
     updateContract,
     deleteContract,
     downloadPdf,
+    fetchContractConsultations,
   };
 });

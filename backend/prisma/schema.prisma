@@ -12,6 +12,7 @@ enum Role {
   OPERATIVE
   DOCTOR
   STAFF
+  CLIENT
 }
 
 enum ContractStatus {
@@ -67,7 +68,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  doctor Doctor?
+  doctor       Doctor?
+  subscription Subscription?
 
   @@map("users")
 }
@@ -198,4 +200,93 @@ model Consultation {
   updatedAt              DateTime           @updatedAt
 
   @@map("consultations")
+}
+
+// ========================================================
+// Suscripciones B2C (Landing pública + Portal de Cliente)
+// ========================================================
+
+enum BillingCycle {
+  MONTHLY
+  ANNUAL
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
+enum ServiceLocationType {
+  CLINIC
+  LABORATORY
+  PHARMACY
+  HOSPITAL
+}
+
+model Subscription {
+  id              String             @id @default(uuid())
+  userId          String             @unique
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId          String
+  billingCycle    BillingCycle
+  status          SubscriptionStatus @default(ACTIVE)
+  amount          Float
+  phone           String?
+  startDate       DateTime           @default(now())
+  periodStart     DateTime           @default(now())
+  nextBillingDate DateTime
+  // Solo se guardan datos no sensibles de la tarjeta (nunca número completo ni CVC)
+  cardBrand       String
+  cardLast4       String
+  cardExpMonth    Int
+  cardExpYear     Int
+  cardHolder      String
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  usages   ServiceUsage[]
+  payments SubscriptionPayment[]
+
+  @@map("subscriptions")
+}
+
+model ServiceUsage {
+  id             String       @id @default(uuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  serviceKey     String
+  usedAt         DateTime     @default(now())
+  locationName   String?
+  notes          String?
+
+  @@map("service_usages")
+}
+
+model SubscriptionPayment {
+  id             String            @id @default(uuid())
+  subscriptionId String
+  subscription   Subscription      @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  amount         Float
+  status         TransactionStatus @default(COMPLETED)
+  reference      String
+  cardLast4      String
+  paidAt         DateTime          @default(now())
+
+  @@map("subscription_payments")
+}
+
+model ServiceLocation {
+  id       String              @id @default(uuid())
+  name     String
+  type     ServiceLocationType
+  address  String
+  city     String
+  phone    String?
+  hours    String?
+  lat      Float
+  lng      Float
+  services String[]
+
+  @@map("service_locations")
 }

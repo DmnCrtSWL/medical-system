@@ -16,8 +16,18 @@ import {
   Clock,
   CheckCircle2,
   UserCheck,
+  Users,
+  Search,
+  X,
 } from 'lucide-vue-next';
-import { useContractStore, type Contract, type ContractTariff, type ContractDuration, type ContractStatus } from '../stores/contracts';
+import {
+  useContractStore,
+  type Contract,
+  type ContractTariff,
+  type ContractDuration,
+  type ContractStatus,
+  type ContractConsultationsResponse,
+} from '../stores/contracts';
 import { useCompanyStore } from '../stores/companies';
 import { useDoctorStore } from '../stores/doctors';
 import { Card, CardContent } from '../components/ui/card';
@@ -42,6 +52,67 @@ const status = ref<ContractStatus>('ACTIVE');
 const formError = ref('');
 const isSubmitting = ref(false);
 const successMessage = ref('');
+
+// Estado para el Modal de Auditoría de Empleados Atendidos
+const showConsultationsModal = ref(false);
+const isLoadingConsultations = ref(false);
+const consultationsError = ref<string | null>(null);
+const selectedContractConsultations = ref<ContractConsultationsResponse | null>(null);
+const activeContractForModal = ref<Contract | null>(null);
+const consultationSearch = ref('');
+
+const openConsultationsModal = async (contract: Contract) => {
+  activeContractForModal.value = contract;
+  showConsultationsModal.value = true;
+  isLoadingConsultations.value = true;
+  consultationsError.value = null;
+  consultationSearch.value = '';
+  try {
+    const data = await contractStore.fetchContractConsultations(contract.id);
+    selectedContractConsultations.value = data;
+  } catch (err: unknown) {
+    consultationsError.value = err instanceof Error ? err.message : 'Error al cargar los empleados atendidos.';
+  } finally {
+    isLoadingConsultations.value = false;
+  }
+};
+
+const closeConsultationsModal = () => {
+  showConsultationsModal.value = false;
+  selectedContractConsultations.value = null;
+  activeContractForModal.value = null;
+  consultationsError.value = null;
+  consultationSearch.value = '';
+};
+
+const filteredConsultations = computed(() => {
+  if (!selectedContractConsultations.value) return [];
+  const list = selectedContractConsultations.value.consultations;
+  if (!consultationSearch.value.trim()) return list;
+  const q = consultationSearch.value.toLowerCase().trim();
+  return list.filter((c) =>
+    c.patientName.toLowerCase().includes(q) ||
+    (c.employeeNumber && c.employeeNumber.toLowerCase().includes(q)) ||
+    c.diagnosisDescription.toLowerCase().includes(q) ||
+    c.chiefComplaint.toLowerCase().includes(q) ||
+    c.doctorName.toLowerCase().includes(q)
+  );
+});
+
+const formatConsultationDate = (dateStr: string) => {
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return dateStr;
+  }
+};
 
 onMounted(() => {
   contractStore.fetchContracts();
@@ -332,28 +403,30 @@ const getDurationLabel = (d?: string | null) => {
 
         <!-- Table -->
         <div v-else class="w-full">
-          <table class="w-full text-left text-sm text-muted-foreground transition-colors duration-300">
+          <table class="w-full table-fixed text-left text-sm text-muted-foreground transition-colors duration-300">
             <thead class="bg-muted text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors duration-300 border-b border-border">
               <tr>
-                <th class="px-4 py-3.5 font-bold">Cliente B2B / Empresa</th>
-                <th class="px-4 py-3.5 font-bold">Médico Asignado</th>
-                <th class="px-4 py-3.5 font-bold">Tarifa & Costo</th>
-                <th class="px-4 py-3.5 font-bold">Duración & Vigencia</th>
-                <th class="px-4 py-3.5 font-bold">Estatus</th>
-                <th class="px-4 py-3.5 font-bold text-right">Acciones</th>
+                <th class="w-[25%] pl-6 pr-3 py-3.5 font-bold truncate">Cliente B2B / Empresa</th>
+                <th class="w-[21%] px-3 py-3.5 font-bold truncate">Médico Asignado</th>
+                <th class="w-[13%] px-3 py-3.5 font-bold whitespace-nowrap">Tarifa & Costo</th>
+                <th class="w-[18%] px-3 py-3.5 font-bold whitespace-nowrap">Duración & Vigencia</th>
+                <th class="w-[9%] px-3 py-3.5 font-bold text-center whitespace-nowrap">Estatus</th>
+                <th class="w-[14%] pl-2 pr-6 py-3.5 font-bold text-right whitespace-nowrap">Acciones</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-black font-medium">
               <tr v-for="contract in contractStore.contracts" :key="contract.id" class="hover:bg-muted/60 transition-colors">
                 <!-- Empresa -->
-                <td class="px-4 py-3.5">
-                  <div class="flex items-center gap-3">
+                <td class="pl-6 pr-3 py-3.5 truncate">
+                  <div class="flex items-center gap-3 min-w-0">
                     <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-sm shrink-0">
                       {{ (contract.company.legalName || contract.company.name).charAt(0).toUpperCase() }}
                     </div>
-                    <div class="min-w-0">
-                      <p class="font-bold text-foreground truncate">{{ contract.company.legalName || contract.company.name }}</p>
-                      <p v-if="contract.company.representativeName" class="text-xs text-muted-foreground truncate flex items-center gap-1">
+                    <div class="min-w-0 flex-1">
+                      <p class="font-bold text-foreground truncate" :title="contract.company.legalName || contract.company.name">
+                        {{ contract.company.legalName || contract.company.name }}
+                      </p>
+                      <p v-if="contract.company.representativeName" class="text-xs text-muted-foreground truncate flex items-center gap-1" :title="'Rep: ' + contract.company.representativeName">
                         <Building2 class="w-3 h-3 text-slate-400 shrink-0" />
                         Rep: {{ contract.company.representativeName }}
                       </p>
@@ -362,23 +435,23 @@ const getDurationLabel = (d?: string | null) => {
                 </td>
 
                 <!-- Médico Asignado -->
-                <td class="px-4 py-3.5">
+                <td class="px-3 py-3.5 truncate">
                   <div v-if="contract.doctor" class="space-y-0.5 min-w-0">
-                    <p class="font-bold text-foreground text-xs flex items-center gap-1.5 truncate">
+                    <p class="font-bold text-foreground text-xs flex items-center gap-1.5 truncate" :title="formatDoctorTitle(contract.doctor.user.name)">
                       <Stethoscope class="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                      {{ formatDoctorTitle(contract.doctor.user.name) }}
+                      <span class="truncate">{{ formatDoctorTitle(contract.doctor.user.name) }}</span>
                     </p>
                     <p class="text-xs text-muted-foreground truncate">
                       Céd: {{ contract.doctor.licenseId || 'En trámite' }}
                     </p>
                   </div>
                   <span v-else class="text-xs text-slate-400 italic flex items-center gap-1">
-                    <UserCheck class="w-3.5 h-3.5 text-slate-400" /> Sin médico asignado
+                    <UserCheck class="w-3.5 h-3.5 text-slate-400 shrink-0" /> Sin médico asignado
                   </span>
                 </td>
 
                 <!-- Tarifa & Monto -->
-                <td class="px-4 py-3.5 space-y-1">
+                <td class="px-3 py-3.5 whitespace-nowrap space-y-1">
                   <span
                     class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-bold border"
                     :class="getTariffBadge(contract.tariff).class"
@@ -392,19 +465,21 @@ const getDurationLabel = (d?: string | null) => {
                 </td>
 
                 <!-- Duración & Vigencia -->
-                <td class="px-4 py-3.5 space-y-0.5">
-                  <div class="inline-flex items-center gap-1 text-[11px] font-semibold text-foreground">
-                    <Clock class="w-3 h-3 text-slate-400" />
-                    <span>{{ getDurationLabel(contract.duration) }}</span>
-                  </div>
-                  <div class="text-xs text-muted-foreground flex items-center gap-1">
-                    <Calendar class="w-3 h-3 text-slate-400 shrink-0" />
-                    <span>{{ formatDate(contract.startDate) }} - {{ formatDate(contract.endDate) }}</span>
+                <td class="px-3 py-3.5 whitespace-nowrap">
+                  <div class="space-y-1">
+                    <span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-muted text-foreground border border-border/70">
+                      <Clock class="w-3 h-3 text-muted-foreground" />
+                      {{ getDurationLabel(contract.duration) }}
+                    </span>
+                    <div class="text-[11px] text-muted-foreground flex items-center gap-1 font-medium">
+                      <Calendar class="w-3 h-3 text-muted-foreground shrink-0" />
+                      <span>{{ formatDate(contract.startDate) }} &rarr; {{ formatDate(contract.endDate) }}</span>
+                    </div>
                   </div>
                 </td>
 
                 <!-- Estatus -->
-                <td class="px-4 py-3.5">
+                <td class="px-3 py-3.5 text-center whitespace-nowrap">
                   <span
                     v-if="contract.status === 'ACTIVE'"
                     class="inline-flex items-center bg-mint-500/10 text-mint-600 border border-mint-500/20 px-2.5 py-0.5 rounded-full text-xs font-semibold"
@@ -426,32 +501,40 @@ const getDurationLabel = (d?: string | null) => {
                 </td>
 
                 <!-- Acciones -->
-                <td class="px-4 py-3.5 text-right whitespace-nowrap">
-                  <div class="flex items-center justify-end gap-1">
+                <td class="pl-2 pr-6 py-3.5 text-right whitespace-nowrap">
+                  <div class="inline-flex items-center gap-0.5 bg-muted/40 dark:bg-muted/20 p-1 rounded-xl border border-border/70">
                     <Button
                       variant="ghost"
-                      class="text-mint-600 hover:text-mint-700 hover:bg-mint-500/10 rounded-xl p-2 h-8 w-8 inline-flex items-center justify-center cursor-pointer transition-colors"
+                      class="text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 rounded-lg p-1 h-7 w-7 inline-flex items-center justify-center cursor-pointer transition-colors"
+                      title="Auditar Empleados Atendidos"
+                      @click="openConsultationsModal(contract)"
+                    >
+                      <Users class="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      class="text-mint-600 hover:text-mint-700 hover:bg-mint-500/10 rounded-lg p-1 h-7 w-7 inline-flex items-center justify-center cursor-pointer transition-colors"
                       title="Descargar Machote Oficial en PDF"
                       :disabled="contractStore.isDownloading"
                       @click="handleDownloadPdf(contract)"
                     >
-                      <FileDown class="w-4 h-4" />
+                      <FileDown class="w-3.5 h-3.5" />
                     </Button>
                     <Button
                       variant="ghost"
-                      class="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 rounded-xl p-2 h-8 w-8 inline-flex items-center justify-center cursor-pointer transition-colors"
+                      class="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 rounded-lg p-1 h-7 w-7 inline-flex items-center justify-center cursor-pointer transition-colors"
                       title="Editar Convenio"
                       @click="openEditModal(contract)"
                     >
-                      <Pencil class="w-4 h-4" />
+                      <Pencil class="w-3.5 h-3.5" />
                     </Button>
                     <Button
                       variant="ghost"
-                      class="text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 rounded-xl p-2 h-8 w-8 inline-flex items-center justify-center cursor-pointer transition-colors"
+                      class="text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 rounded-lg p-1 h-7 w-7 inline-flex items-center justify-center cursor-pointer transition-colors"
                       title="Eliminar Convenio"
                       @click="handleDelete(contract.id, contract.company.legalName || contract.company.name)"
                     >
-                      <Trash2 class="w-4 h-4" />
+                      <Trash2 class="w-3.5 h-3.5" />
                     </Button>
                   </div>
                 </td>
@@ -642,6 +725,201 @@ const getDurationLabel = (d?: string | null) => {
             </Button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Modal: Empleados Atendidos por Contrato -->
+    <div
+      v-if="showConsultationsModal"
+      class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 transition-all"
+    >
+      <div
+        class="bg-card border border-border rounded-2xl max-w-4xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+      >
+        <!-- Header del Modal -->
+        <div class="flex items-center justify-between border-b border-border pb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+              <Users class="w-5 h-5" />
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-foreground flex items-center gap-2">
+                Auditoría de Empleados Atendidos
+              </h2>
+              <p class="text-xs text-muted-foreground font-medium mt-0.5">
+                Convenio con <strong class="text-foreground">{{ activeContractForModal?.company.legalName || activeContractForModal?.company.name }}</strong>
+                <span v-if="activeContractForModal?.doctor" class="ml-1.5">• Médico: <span class="text-blue-500 font-semibold">{{ formatDoctorTitle(activeContractForModal.doctor.user.name) }}</span></span>
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            class="rounded-xl p-2 text-slate-400 hover:text-foreground cursor-pointer h-9 w-9 inline-flex items-center justify-center"
+            @click="closeConsultationsModal"
+          >
+            <X class="w-5 h-5" />
+          </Button>
+        </div>
+
+        <!-- KPI Resumen Rápido -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="p-3.5 bg-mint-500/10 border border-mint-500/20 rounded-2xl flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-mint-500/20 flex items-center justify-center text-mint-600 shrink-0">
+              <Stethoscope class="w-4 h-4" />
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-muted-foreground">Total Consultas</p>
+              <p class="text-lg font-black text-mint-600 dark:text-mint-400">
+                {{ selectedContractConsultations?.contract.totalConsultations || 0 }}
+              </p>
+            </div>
+          </div>
+
+          <div class="p-3.5 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-600 shrink-0">
+              <UserCheck class="w-4 h-4" />
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-muted-foreground">Empleados Únicos</p>
+              <p class="text-lg font-black text-blue-600 dark:text-blue-400">
+                {{ selectedContractConsultations?.contract.uniquePatientsCount || 0 }}
+              </p>
+            </div>
+          </div>
+
+          <div class="p-3.5 bg-muted/80 border border-border rounded-2xl flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-foreground shrink-0">
+              <Clock class="w-4 h-4" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs font-semibold text-muted-foreground">Vigencia Convenio</p>
+              <p class="text-xs font-bold text-foreground truncate">
+                {{ activeContractForModal ? `${formatDate(activeContractForModal.startDate)} - ${formatDate(activeContractForModal.endDate)}` : 'Activo' }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Buscador de Empleados / Consultas -->
+        <div class="relative">
+          <Search class="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            v-model="consultationSearch"
+            type="text"
+            placeholder="Buscar por nombre de empleado, no. nómina o diagnóstico..."
+            class="w-full pl-10 pr-4 py-2 text-sm bg-muted/60 border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-mint-500 transition-all"
+          />
+        </div>
+
+        <!-- Loading State -->
+        <div v-if="isLoadingConsultations" class="py-16 text-center text-muted-foreground space-y-2">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-mint-500 mb-2"></div>
+          <p class="text-sm font-medium">Consultando atenciones médicas del contrato...</p>
+        </div>
+
+        <!-- Error State -->
+        <div v-else-if="consultationsError" class="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-600 rounded-2xl text-sm flex items-center gap-2">
+          <AlertCircle class="w-5 h-5 shrink-0" />
+          <span>{{ consultationsError }}</span>
+        </div>
+
+        <!-- Empty State -->
+        <div
+          v-else-if="!selectedContractConsultations || filteredConsultations.length === 0"
+          class="py-14 text-center text-muted-foreground space-y-2 border border-dashed border-border rounded-2xl"
+        >
+          <div class="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mx-auto text-slate-400">
+            <Users class="w-6 h-6" />
+          </div>
+          <p class="text-sm font-semibold text-foreground">
+            {{ consultationSearch ? 'No se encontraron coincidencias para la búsqueda' : 'No hay atenciones médicas registradas aún' }}
+          </p>
+          <p class="text-xs text-muted-foreground max-w-sm mx-auto">
+            {{ consultationSearch ? 'Intenta buscando con otro término o número de nómina.' : 'Las consultas atendidas por el médico in-house aparecerán aquí automáticamente en cuanto se sincronicen.' }}
+          </p>
+        </div>
+
+        <!-- Tabla de Empleados Atendidos -->
+        <div v-else class="flex-1 overflow-y-auto border border-border rounded-2xl">
+          <table class="w-full text-left text-sm text-muted-foreground">
+            <thead class="bg-muted text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border sticky top-0">
+              <tr>
+                <th class="px-4 py-3 font-bold">Empleado / Paciente</th>
+                <th class="px-4 py-3 font-bold">Fecha de Atención</th>
+                <th class="px-4 py-3 font-bold">Diagnóstico / Motivo</th>
+                <th class="px-4 py-3 font-bold">Somatometría</th>
+                <th class="px-4 py-3 font-bold">Médico Tratante</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border font-medium">
+              <tr v-for="c in filteredConsultations" :key="c.id" class="hover:bg-muted/50 transition-colors">
+                <!-- Empleado -->
+                <td class="px-4 py-3">
+                  <div class="font-bold text-foreground text-xs">{{ c.patientName }}</div>
+                  <div class="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
+                    <span v-if="c.employeeNumber">Nómina: <strong class="text-foreground">{{ c.employeeNumber }}</strong></span>
+                    <span v-if="c.patientAge">• {{ c.patientAge }} años</span>
+                  </div>
+                </td>
+
+                <!-- Fecha -->
+                <td class="px-4 py-3 text-xs whitespace-nowrap text-foreground font-semibold">
+                  {{ formatConsultationDate(c.consultationDate) }}
+                </td>
+
+                <!-- Diagnóstico -->
+                <td class="px-4 py-3">
+                  <p class="font-bold text-foreground text-xs">{{ c.diagnosisDescription }}</p>
+                  <p v-if="c.chiefComplaint && c.chiefComplaint !== c.diagnosisDescription" class="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                    {{ c.chiefComplaint }}
+                  </p>
+                </td>
+
+                <!-- Somatometría -->
+                <td class="px-4 py-3 text-xs">
+                  <div class="space-y-0.5">
+                    <span
+                      v-if="c.vitalSigns?.bloodPressureSystolic && c.vitalSigns?.bloodPressureDiastolic"
+                      class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-muted border border-border text-foreground"
+                    >
+                      T/A: {{ c.vitalSigns.bloodPressureSystolic }}/{{ c.vitalSigns.bloodPressureDiastolic }}
+                    </span>
+                    <div v-if="c.vitalSigns?.weightKg" class="text-[11px] text-muted-foreground">
+                      Peso: {{ c.vitalSigns.weightKg }} kg <span v-if="c.vitalSigns?.bmi">• IMC: {{ c.vitalSigns.bmi }}</span>
+                    </div>
+                    <span v-if="!c.vitalSigns?.bloodPressureSystolic && !c.vitalSigns?.weightKg" class="text-slate-400 text-[11px]">
+                      Sin somatometría
+                    </span>
+                  </div>
+                </td>
+
+                <!-- Médico -->
+                <td class="px-4 py-3 text-xs whitespace-nowrap">
+                  <span class="inline-flex items-center gap-1.5 font-bold text-foreground">
+                    <Stethoscope class="w-3 h-3 text-blue-500 shrink-0" />
+                    {{ c.doctorName }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Footer del Modal -->
+        <div class="flex items-center justify-between border-t border-border pt-3">
+          <p class="text-xs text-muted-foreground font-medium">
+            Mostrando <strong class="text-foreground">{{ filteredConsultations.length }}</strong> de <strong class="text-foreground">{{ selectedContractConsultations?.consultations.length || 0 }}</strong> atenciones registradas
+          </p>
+          <Button
+            variant="default"
+            size="sm"
+            class="bg-mint-500 hover:bg-mint-600 text-white rounded-xl font-bold cursor-pointer"
+            @click="closeConsultationsModal"
+          >
+            Cerrar Auditoría
+          </Button>
+        </div>
       </div>
     </div>
   </div>

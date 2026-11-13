@@ -13,6 +13,7 @@ Para convivir armónicamente con los proyectos existentes en el servidor (`al-ch
 | **Base de Datos** | `medical_postgres` | `postgres:16-alpine` | `5432` | **`5438`** | Volumen `medical_postgres_data` |
 | **API Backend** | `medical_backend` | `node:20-alpine` | `4000` | **`3014`** | Volumen `medical_uploads_data` (`/app/uploads`) |
 | **Frontend Web** | `medical_frontend` | `nginx:alpine` | `80` | **`9193`** | N/A (Build estático de Vite) |
+| **Landing Pública + Portal Cliente** | `medical_landing` | `nginx:alpine` | `80` | **`9198`** | N/A (Build estático de Vite) |
 
 > **Nota Crítica de Aislamiento:** Nginx del sistema host ya administra los puertos `80` y `443`. Los contenedores de Medical System nunca deben intentar vincularse a los puertos 80/443 del host.
 
@@ -32,6 +33,7 @@ POSTGRES_DB=medical_db
 POSTGRES_PORT=5438
 BACKEND_PORT=3014
 FRONTEND_PORT=9193
+LANDING_PORT=9198
 
 # Seguridad y JWT
 JWT_SECRET=medical_super_secret_jwt_key_staging_2026

@@ -66,6 +66,21 @@ services:
     networks:
       - medical_network
 
+  landing:
+    build:
+      context: ./landing
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: medical_landing
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${LANDING_PORT:-9198}:80"
+    networks:
+      - medical_network
+
 volumes:
   medical_postgres_data:
     driver: local

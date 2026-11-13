@@ -29,6 +29,7 @@ import {
   Phone,
   Clock,
   CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react-native';
 import { patientsService } from '../services/patients';
 import { PatientHistoryResponse, PatientHistoryItem } from '../types';
@@ -40,9 +41,13 @@ interface PatientHistoryScreenProps {
   onBack: () => void;
   onNewConsultationForPatient: (patientInfo: {
     name: string;
+    firstName?: string;
+    lastName?: string;
     companyName?: string;
     employeeNumber?: string;
     age?: number;
+    gender?: 'MASCULINO' | 'FEMENINO' | 'OTRO';
+    allergies?: string;
   }) => void;
 }
 
@@ -92,7 +97,7 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
       const date = new Date(dateString);
       return date.toLocaleDateString('es-MX', {
         day: '2-digit',
-        month: 'long',
+        month: 'short',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
@@ -112,10 +117,51 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
 
   const handleStartConsultation = () => {
     if (!historyData) return;
+
+    // Calcular edad a partir de fecha de nacimiento o tomarla de la consulta previa más reciente
+    let calculatedAge: number | undefined;
+    if (historyData.patient.dateOfBirth) {
+      const birth = new Date(historyData.patient.dateOfBirth);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+      if (age > 0 && age < 130) {
+        calculatedAge = age;
+      }
+    }
+    if (!calculatedAge) {
+      const lastWithAge = historyData.consultations.find(
+        (c) => c.patientAge != null && c.patientAge > 0
+      );
+      if (lastWithAge?.patientAge) {
+        calculatedAge = lastWithAge.patientAge;
+      }
+    }
+
+    // Tomar alergias conocidas de la consulta previa más reciente si existen
+    const lastWithAllergies = historyData.consultations.find(
+      (c) => c.allergies && c.allergies.trim().length > 0
+    );
+    const knownAllergies = lastWithAllergies?.allergies || undefined;
+
+    // Tomar género del paciente o de la consulta previa
+    const patientGender =
+      (historyData.patient.gender as 'MASCULINO' | 'FEMENINO' | 'OTRO') ||
+      (historyData.consultations.find((c) => c.gender)?.gender as 'MASCULINO' | 'FEMENINO' | 'OTRO') ||
+      undefined;
+
     onNewConsultationForPatient({
       name: historyData.patient.name,
+      firstName: historyData.patient.firstName,
+      lastName: historyData.patient.lastName,
       companyName: historyData.patient.companyName,
       employeeNumber: historyData.patient.employeeNumber || undefined,
+      gender: patientGender,
+      age: calculatedAge,
+      allergies: knownAllergies,
     });
   };
 
@@ -306,58 +352,119 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
           {/* Lista de Consultas */}
           {historyData?.consultations.length === 0 ? (
             <View style={styles.emptyConsultationsBox}>
-              <CheckCircle2 size={40} color={colors.primary} style={{ marginBottom: 10 }} />
+              <View
+                style={[
+                  styles.emptyConsultationsBadge,
+                  {
+                    backgroundColor: colors.primaryLight,
+                    borderColor: colors.primaryBorder,
+                  },
+                ]}
+              >
+                <Stethoscope size={36} color={colors.primary} />
+              </View>
               <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
-                Sin consultas previas
+                Expediente Nuevo
               </Text>
               <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                Este paciente aún no tiene visitas registradas en el historial.
+                Este paciente aún no cuenta con consultas médicas previas en su línea de tiempo.
               </Text>
+              <TouchableOpacity
+                style={[
+                  styles.emptyCtaButton,
+                  {
+                    backgroundColor: colors.primary,
+                    shadowColor: colors.primary,
+                  },
+                ]}
+                onPress={handleStartConsultation}
+                activeOpacity={0.85}
+              >
+                <Plus size={16} color={colors.textInverse} style={{ marginRight: 6 }} />
+                <Text style={[styles.emptyCtaButtonText, { color: colors.textInverse }]}>
+                  Iniciar Primera Consulta
+                </Text>
+              </TouchableOpacity>
             </View>
           ) : (
             historyData?.consultations.map((consultation: PatientHistoryItem, index: number) => {
               const isExpanded = expandedIds.has(consultation.id);
               const bmiInfo = getBmiCategoryInfo(consultation.vitalSigns?.bmi);
+              const isLatest = index === 0;
 
               return (
-                <View
-                  key={consultation.id || index}
-                  style={[
-                    styles.consultationCard,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: isExpanded ? colors.primaryBorder : colors.cardBorder,
-                      shadowColor: colors.shadowColor,
-                    },
-                  ]}
-                >
-                  {/* Encabezado de la Consulta */}
-                  <TouchableOpacity
-                    style={styles.consultationHeader}
-                    onPress={() => toggleExpand(consultation.id)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.consultationHeaderLeft}>
+                <View key={consultation.id || index} style={styles.timelineRow}>
+                  {/* Columna Izquierda: Eje Vertical y Nodo Conector */}
+                  <View style={styles.timelineSpineColumn}>
+                    {/* Nodo circular indicador */}
+                    <View
+                      style={[
+                        styles.timelineNodeCircle,
+                        {
+                          backgroundColor: isLatest ? colors.primary : colors.card,
+                          borderColor: colors.primary,
+                        },
+                      ]}
+                    >
                       <View
                         style={[
-                          styles.timelineIcon,
+                          styles.timelineNodeInnerDot,
                           {
-                            backgroundColor: colors.primaryLight,
-                            borderColor: colors.primaryBorder,
+                            backgroundColor: isLatest ? colors.textInverse : colors.primary,
                           },
                         ]}
-                      >
-                        <Calendar size={16} color={colors.primary} />
-                      </View>
-                      <View>
-                        <Text style={[styles.consultationDate, { color: colors.textPrimary }]}>
-                          {formatDate(consultation.consultationDate)}
-                        </Text>
-                        <Text style={[styles.doctorNameText, { color: colors.textSecondary }]}>
-                          Atendido por: {consultation.doctorName}
-                        </Text>
-                      </View>
+                      />
                     </View>
+
+                    {/* Línea vertical conectora continua hacia la siguiente cita */}
+                    {index < historyData.consultations.length - 1 && (
+                      <View
+                        style={[
+                          styles.timelineSpineLine,
+                          { backgroundColor: colors.border },
+                        ]}
+                      />
+                    )}
+                  </View>
+
+                  {/* Columna Derecha: Tarjeta de la Consulta */}
+                  <View
+                    style={[
+                      styles.consultationCard,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: isExpanded ? colors.primaryBorder : colors.cardBorder,
+                        shadowColor: colors.shadowColor,
+                      },
+                    ]}
+                  >
+                    {/* Encabezado de la Consulta */}
+                    <TouchableOpacity
+                      style={styles.consultationHeader}
+                      onPress={() => toggleExpand(consultation.id)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.consultationHeaderLeft}>
+                        <View
+                          style={[
+                            styles.timelineIcon,
+                            {
+                              backgroundColor: colors.primaryLight,
+                              borderColor: colors.primaryBorder,
+                            },
+                          ]}
+                        >
+                          <Calendar size={16} color={colors.primary} />
+                        </View>
+                        <View style={{ flex: 1, minWidth: 0, marginRight: 6 }}>
+                          <Text style={[styles.consultationDate, { color: colors.textPrimary }]}>
+                            {formatDate(consultation.consultationDate)}
+                          </Text>
+                          <Text style={[styles.doctorNameText, { color: colors.textSecondary }]} numberOfLines={1}>
+                            Atendido por: {consultation.doctorName}
+                          </Text>
+                        </View>
+                      </View>
 
                     <View style={styles.headerRightActions}>
                       {consultation.status === 'LOCAL_PENDING' && (
@@ -441,7 +548,7 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
                         >
                           <Heart size={14} color="#EF4444" style={{ marginRight: 4 }} />
                           <Text style={[styles.vitalItemLabel, { color: colors.textMuted }]}>
-                            Presión:
+                            Presión (T/A):
                           </Text>
                           <Text
                             style={[
@@ -452,6 +559,32 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
                             {consultation.vitalSigns?.bloodPressureSystolic &&
                             consultation.vitalSigns?.bloodPressureDiastolic
                               ? `${consultation.vitalSigns.bloodPressureSystolic}/${consultation.vitalSigns.bloodPressureDiastolic} mmHg`
+                              : 'N/A'}
+                          </Text>
+                        </View>
+
+                        {/* Peso en Kg */}
+                        <View
+                          style={[
+                            styles.vitalItem,
+                            {
+                              backgroundColor: colors.surfaceSecondary,
+                              borderColor: colors.border,
+                            },
+                          ]}
+                        >
+                          <Scale size={14} color={colors.primary} style={{ marginRight: 4 }} />
+                          <Text style={[styles.vitalItemLabel, { color: colors.textMuted }]}>
+                            Peso:
+                          </Text>
+                          <Text
+                            style={[
+                              styles.vitalItemValue,
+                              { color: colors.textPrimary },
+                            ]}
+                          >
+                            {consultation.vitalSigns?.weightKg
+                              ? `${consultation.vitalSigns.weightKg} kg`
                               : 'N/A'}
                           </Text>
                         </View>
@@ -508,33 +641,89 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
                           </Text>
                         </View>
 
-                        {/* IMC */}
+                        {/* IMC (Ancho completo para balance visual) */}
                         <View
                           style={[
-                            styles.vitalItem,
+                            styles.vitalItemFull,
                             {
                               backgroundColor: colors.surfaceSecondary,
                               borderColor: colors.border,
                             },
                           ]}
                         >
-                          <Scale size={14} color="#8B5CF6" style={{ marginRight: 4 }} />
-                          <Text style={[styles.vitalItemLabel, { color: colors.textMuted }]}>
-                            IMC:
-                          </Text>
-                          <Text
-                            style={[
-                              styles.vitalItemValue,
-                              { color: bmiInfo ? bmiInfo.color : colors.textPrimary },
-                            ]}
-                          >
-                            {consultation.vitalSigns?.bmi ? consultation.vitalSigns.bmi : 'N/A'}
-                          </Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Scale size={14} color="#8B5CF6" style={{ marginRight: 6 }} />
+                            <Text style={[styles.vitalItemLabel, { color: colors.textMuted }]}>
+                              Índice de Masa Corporal (IMC):
+                            </Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text
+                              style={[
+                                styles.vitalItemValue,
+                                { color: bmiInfo ? bmiInfo.color : colors.textPrimary, marginRight: 6 },
+                              ]}
+                            >
+                              {consultation.vitalSigns?.bmi ? consultation.vitalSigns.bmi : 'N/A'}
+                            </Text>
+                            {bmiInfo && (
+                              <View
+                                style={[
+                                  styles.bmiPillBadge,
+                                  {
+                                    backgroundColor: colors.card,
+                                    borderColor: bmiInfo.color,
+                                  },
+                                ]}
+                              >
+                                <Text style={[styles.bmiPillText, { color: bmiInfo.color }]}>
+                                  {bmiInfo.label}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
                         </View>
                       </View>
 
-                      {/* Motivo de Consulta y Exploración */}
+                      {/* Motivo de Consulta, Alergias y Notas Clínicas */}
                       <View style={styles.clinicalNotesSection}>
+                        {consultation.allergies && (
+                          <View
+                            style={[
+                              styles.allergyBanner,
+                              {
+                                backgroundColor: colors.warningBg,
+                                borderColor: colors.warningBorder,
+                              },
+                            ]}
+                          >
+                            <AlertTriangle size={15} color={colors.warningText} style={{ marginRight: 6 }} />
+                            <Text style={[styles.allergyBannerText, { color: colors.warningText }]}>
+                              <Text style={{ fontWeight: '700' }}>Alergias: </Text>
+                              {consultation.allergies}
+                            </Text>
+                          </View>
+                        )}
+
+                        {consultation.clinicalNotes && (
+                          <View
+                            style={[
+                              styles.clinicalNotesHighlightBox,
+                              {
+                                backgroundColor: colors.surfaceSecondary,
+                                borderColor: colors.border,
+                              },
+                            ]}
+                          >
+                            <Text style={[styles.noteHeading, { color: colors.primary }]}>
+                              Notas Clínicas del Médico:
+                            </Text>
+                            <Text style={[styles.noteBody, { color: colors.textPrimary }]}>
+                              {consultation.clinicalNotes}
+                            </Text>
+                          </View>
+                        )}
+
                         <View style={styles.clinicalNoteBlock}>
                           <Text style={[styles.noteHeading, { color: colors.textMuted }]}>
                             Motivo de Consulta:
@@ -594,8 +783,9 @@ export const PatientHistoryScreen: React.FC<PatientHistoryScreenProps> = ({
                     </View>
                   )}
                 </View>
-              );
-            })
+              </View>
+            );
+          })
           )}
         </ScrollView>
       )}
@@ -758,19 +948,96 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  emptyConsultationsBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    marginBottom: 12,
+  },
   emptyTitle: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
     marginBottom: 4,
   },
   emptySubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  emptyCtaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  emptyCtaButtonText: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  allergyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 6,
+  },
+  allergyBannerText: {
+    fontSize: 12,
+  },
+  clinicalNotesHighlightBox: {
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    position: 'relative',
+  },
+  timelineSpineColumn: {
+    width: 22,
+    alignItems: 'center',
+    marginRight: 10,
+    paddingTop: 16,
+    position: 'relative',
+  },
+  timelineNodeCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  timelineNodeInnerDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  timelineSpineLine: {
+    position: 'absolute',
+    top: 36,
+    bottom: -16,
+    width: 2,
+    zIndex: 1,
   },
   consultationCard: {
+    flex: 1,
     borderRadius: 18,
     padding: 16,
-    marginBottom: 14,
     borderWidth: 1,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -864,6 +1131,26 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 8,
     borderWidth: 1,
+  },
+  vitalItemFull: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 8,
+    borderRadius: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+  },
+  bmiPillBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  bmiPillText: {
+    fontSize: 10,
+    fontWeight: '800',
   },
   vitalItemLabel: {
     fontSize: 11,

@@ -374,6 +374,7 @@ export const downloadTransactionReceipt = async (req: Request, res: Response): P
     const periodLabel = `${monthNames[txDate.getMonth()]} ${txDate.getFullYear()}`;
 
     const receiptData: PaymentReceiptData = {
+      folio: transaction.folio ?? undefined,
       transactionId: transaction.id,
       date: transaction.date,
       settledAt: transaction.updatedAt,
@@ -444,12 +445,20 @@ export const settleTransaction = async (req: Request, res: Response): Promise<vo
       return;
     }
 
+    if (existingTx.status === TransactionStatus.COMPLETED) {
+      res.status(409).json({ error: 'La transacción ya fue liquidada' });
+      return;
+    }
+
+    const settleDate = new Date();
+    const folio = `REC-${settleDate.getFullYear()}${String(settleDate.getMonth() + 1).padStart(2, '0')}-${existingTx.id.slice(-6).toUpperCase()}`;
     const receiptUrl = `/api/finance/transactions/${existingTx.id}/receipt`;
 
     const updatedTx = await prisma.transaction.update({
       where: { id },
       data: {
         status: TransactionStatus.COMPLETED,
+        folio,
         receiptUrl,
         updatedAt: new Date(),
       },
@@ -478,6 +487,7 @@ export const settleTransaction = async (req: Request, res: Response): Promise<vo
       const periodLabel = `${monthNames[txDate.getMonth()]} ${txDate.getFullYear()}`;
 
       const receiptData: PaymentReceiptData = {
+        folio,
         transactionId: updatedTx.id,
         date: updatedTx.date,
         settledAt: updatedTx.updatedAt,
@@ -506,7 +516,7 @@ export const settleTransaction = async (req: Request, res: Response): Promise<vo
             updatedTx.company.email,
             updatedTx.company.name,
             periodLabel,
-            undefined,
+            folio,
             updatedTx.amount,
             pdfBuffer
           );

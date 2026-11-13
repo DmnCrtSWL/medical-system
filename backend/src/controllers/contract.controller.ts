@@ -586,6 +586,10 @@ export const getContractConsultations = async (req: Request, res: Response): Pro
     const consultations = await prisma.consultation.findMany({
       where: {
         companyId: contract.companyId,
+        consultationDate: {
+          gte: contract.startDate,
+          lte: contract.endDate,
+        },
       },
       orderBy: {
         consultationDate: 'desc',

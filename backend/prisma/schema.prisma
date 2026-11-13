@@ -290,3 +290,25 @@ model ServiceLocation {
 
   @@map("service_locations")
 }
+
+// ========================================================
+// Cuestionario de descubrimiento para el cliente (contenido del sitio)
+// ========================================================
+
+enum QuestionnaireStatus {
+  DRAFT
+  SUBMITTED
+}
+
+model QuestionnaireResponse {
+  id             String              @id @default(uuid())
+  token          String              @unique
+  respondentName String
+  answers        Json                @default("{}")
+  status         QuestionnaireStatus @default(DRAFT)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  submittedAt    DateTime?
+
+  @@map("questionnaire_responses")
+}

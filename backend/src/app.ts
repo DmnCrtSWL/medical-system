@@ -13,6 +13,7 @@ import consultationRoutes from './routes/consultation.routes';
 import userRoutes from './routes/user.routes';
 import publicRoutes from './routes/public.routes';
 import portalRoutes from './routes/portal.routes';
+import questionnaireRoutes from './routes/questionnaire.routes';
 import { logger, morganStream } from './utils/logger';
 
 dotenv.config();
@@ -50,6 +51,7 @@ app.use('/api/finance', financeRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/portal', portalRoutes);
+app.use('/api/questionnaires', questionnaireRoutes);
 
 // Endpoint de Salud / Prueba
 app.get('/api/health', (_req: Request, res: Response) => {

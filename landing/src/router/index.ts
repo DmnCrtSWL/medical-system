@@ -8,6 +8,7 @@ const router = createRouter({
     { path: '/contratar', name: 'checkout', component: () => import('../views/CheckoutView.vue') },
     { path: '/portal/login', name: 'portal-login', component: () => import('../views/PortalLoginView.vue') },
     { path: '/portal', name: 'portal', component: () => import('../views/PortalView.vue'), meta: { requiresAuth: true } },
+    { path: '/cuestionario/:token', name: 'questionnaire', component: () => import('../views/QuestionnaireView.vue') },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
   scrollBehavior(to) {

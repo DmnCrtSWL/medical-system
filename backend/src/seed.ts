@@ -1,4 +1,4 @@
-import { PrismaClient, Role, ContractStatus, TransactionType, TransactionCategory, ConsultationStatus } from '@prisma/client';
+import { PrismaClient, Role, ContractStatus, TransactionType, TransactionCategory, ConsultationStatus, BillingCycle, ServiceLocationType } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -294,6 +294,81 @@ async function main() {
       ],
     });
     console.log('✅ Transacciones financieras base registradas');
+  }
+
+  // 9. Red de servicios médicos (buscador del portal de cliente)
+  const locationCount = await prisma.serviceLocation.count();
+  if (locationCount === 0) {
+    await prisma.serviceLocation.createMany({
+      data: [
+        { name: 'MedSys Clínica Roma', type: ServiceLocationType.CLINIC, address: 'Av. Álvaro Obregón 120, Roma Nte.', city: 'CDMX', phone: '55 5208 1100', hours: 'Lun-Dom 7:00-22:00', lat: 19.4194, lng: -99.1614, services: ['Medicina general', 'Nutrición', 'Telemedicina'] },
+        { name: 'MedSys Clínica Polanco', type: ServiceLocationType.CLINIC, address: 'Av. Presidente Masaryk 340, Polanco', city: 'CDMX', phone: '55 5280 4400', hours: 'Lun-Sáb 8:00-21:00', lat: 19.4318, lng: -99.1950, services: ['Medicina general', 'Especialistas', 'Check-up'] },
+        { name: 'MedSys Clínica Coyoacán', type: ServiceLocationType.CLINIC, address: 'Av. Miguel Ángel de Quevedo 687, Coyoacán', city: 'CDMX', phone: '55 5554 2200', hours: 'Lun-Sáb 8:00-20:00', lat: 19.3450, lng: -99.1700, services: ['Medicina general', 'Pediatría', 'Nutrición'] },
+        { name: 'Laboratorio Clínico Insurgentes', type: ServiceLocationType.LABORATORY, address: 'Av. Insurgentes Sur 1458, Actipan', city: 'CDMX', phone: '55 5524 7788', hours: 'Lun-Sáb 6:30-15:00', lat: 19.3730, lng: -99.1780, services: ['Química sanguínea', 'Biometría hemática', 'Examen general de orina'] },
+        { name: 'Laboratorio Clínico Santa Fe', type: ServiceLocationType.LABORATORY, address: 'Av. Vasco de Quiroga 3800, Santa Fe', city: 'CDMX', phone: '55 5292 3311', hours: 'Lun-Sáb 7:00-14:00', lat: 19.3590, lng: -99.2750, services: ['Química sanguínea', 'Perfil tiroideo', 'Rayos X'] },
+        { name: 'Farmacia Red MedSys Condesa', type: ServiceLocationType.PHARMACY, address: 'Av. Tamaulipas 66, Condesa', city: 'CDMX', phone: '55 5553 9090', hours: 'Abierto 24 horas', lat: 19.4110, lng: -99.1730, services: ['Descuento de red', 'Surtido de recetas'] },
+        { name: 'Farmacia Red MedSys Del Valle', type: ServiceLocationType.PHARMACY, address: 'Av. Coyoacán 1622, Del Valle', city: 'CDMX', phone: '55 5534 6060', hours: 'Lun-Dom 8:00-23:00', lat: 19.3780, lng: -99.1700, services: ['Descuento de red', 'Surtido de recetas'] },
+        { name: 'Hospital Ángeles Metropolitano (convenio)', type: ServiceLocationType.HOSPITAL, address: 'Tlacotalpan 59, Roma Sur', city: 'CDMX', phone: '55 5265 1800', hours: 'Urgencias 24 horas', lat: 19.4060, lng: -99.1600, services: ['Urgencias', 'Especialistas', 'Hospitalización'] },
+        { name: 'Hospital Español (convenio)', type: ServiceLocationType.HOSPITAL, address: 'Av. Ejército Nacional 613, Granada', city: 'CDMX', phone: '55 5255 9600', hours: 'Urgencias 24 horas', lat: 19.4400, lng: -99.1950, services: ['Urgencias', 'Especialistas', 'Check-up'] },
+      ],
+    });
+    console.log('✅ Red de servicios médicos registrada');
+  }
+
+  // 10. Cliente B2C de demostración para el portal de suscriptores
+  const clientEmail = 'cliente@medical.com';
+  const existingClient = await prisma.user.findUnique({ where: { email: clientEmail } });
+  if (!existingClient) {
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), now.getMonth() - 4, 15);
+    const nextBillingDate = new Date(now.getFullYear(), now.getDate() >= 15 ? now.getMonth() + 1 : now.getMonth(), 15);
+    const daysAgo = (d: number) => new Date(now.getTime() - d * 24 * 60 * 60 * 1000);
+
+    await prisma.user.create({
+      data: {
+        email: clientEmail,
+        name: 'Mariana López',
+        password: await bcrypt.hash('Cliente123!', 10),
+        role: Role.CLIENT,
+        subscription: {
+          create: {
+            planId: 'integral',
+            billingCycle: BillingCycle.MONTHLY,
+            amount: 699,
+            phone: '55 1234 5678',
+            startDate,
+            periodStart: startDate,
+            nextBillingDate,
+            cardBrand: 'Visa',
+            cardLast4: '4242',
+            cardExpMonth: 8,
+            cardExpYear: now.getFullYear() + 2,
+            cardHolder: 'Mariana López',
+            usages: {
+              create: [
+                { serviceKey: 'GENERAL_CONSULTATION', usedAt: daysAgo(110), locationName: 'MedSys Clínica Roma', notes: 'Infección de vías respiratorias' },
+                { serviceKey: 'LAB_BASIC', usedAt: daysAgo(104), locationName: 'Laboratorio Clínico Insurgentes', notes: 'Química sanguínea de 6 elementos' },
+                { serviceKey: 'TELEMEDICINE', usedAt: daysAgo(80), notes: 'Seguimiento de resultados' },
+                { serviceKey: 'GENERAL_CONSULTATION', usedAt: daysAgo(62), locationName: 'MedSys Clínica Roma', notes: 'Control de presión arterial' },
+                { serviceKey: 'NUTRITION', usedAt: daysAgo(45), locationName: 'MedSys Clínica Roma', notes: 'Plan de alimentación' },
+                { serviceKey: 'SPECIALIST', usedAt: daysAgo(30), locationName: 'MedSys Clínica Polanco', notes: 'Cardiología' },
+                { serviceKey: 'TELEMEDICINE', usedAt: daysAgo(12), notes: 'Dolor de cabeza' },
+                { serviceKey: 'GENERAL_CONSULTATION', usedAt: daysAgo(5), locationName: 'MedSys Clínica Coyoacán', notes: 'Revisión general' },
+              ],
+            },
+            payments: {
+              create: [0, 1, 2, 3, 4].map((i) => ({
+                amount: 699,
+                reference: `PAY-DEMO${String(5 - i).padStart(4, '0')}`,
+                cardLast4: '4242',
+                paidAt: new Date(startDate.getFullYear(), startDate.getMonth() + i, 15),
+              })).filter((p) => p.paidAt <= now),
+            },
+          },
+        },
+      },
+    });
+    console.log(`✅ Cliente de portal listo: ${clientEmail}`);
   }
 
   console.log('🎉 Seed completado exitosamente para entorno de Staging.');
